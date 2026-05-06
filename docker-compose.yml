@@ -1,11 +1,11 @@
 services:
   postgres:
     image: postgres:16
-    container_name: empowerlean-postgres
+    container_name: empowerlearn-postgres
     environment:
-      POSTGRES_USER: empowerlean
-      POSTGRES_PASSWORD: empowerlean123
-      POSTGRES_DB: empowerlean
+      POSTGRES_USER: empowerlearn
+      POSTGRES_PASSWORD: empowerlearn123
+      POSTGRES_DB: empowerlearn
     ports:
       - "5432:5432"
     volumes:
@@ -13,7 +13,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: empowerlean-redis
+    container_name: empowerlearn-redis
     ports:
       - "6379:6379"
     volumes:
@@ -21,10 +21,10 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management
-    container_name: empowerlean-rabbitmq
+    container_name: empowerlearn-rabbitmq
     environment:
-      RABBITMQ_DEFAULT_USER: empowerlean
-      RABBITMQ_DEFAULT_PASS: empowerlean123
+      RABBITMQ_DEFAULT_USER: empowerlearn
+      RABBITMQ_DEFAULT_PASS: empowerlearn123
     ports:
       - "5672:5672"
       - "15672:15672"
