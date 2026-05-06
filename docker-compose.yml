@@ -1,0 +1,32 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: empowerlean-postgres
+    environment:
+      POSTGRES_USER: empowerlean
+      POSTGRES_PASSWORD: empowerlean123
+      POSTGRES_DB: empowerlean
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: empowerlean-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis-data:/data
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: empowerlean-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: empowerlean
+      RABBITMQ_DEFAULT_PASS: empowerlean123
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - ./rabbitmq-data:/var/lib/rabbitmq
