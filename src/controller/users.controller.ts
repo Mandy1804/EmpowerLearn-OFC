@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';    
+import { getFirestore } from 'firebase-admin/firestore';
 
 
 //get: esse metodo retorna todos os usuarios
@@ -13,8 +14,7 @@ type User = { //estamos os tipos de dados
   data_nascimento: Date;
   email: string;
 };
-
-let id = 0; //definimos que id comeca com 0 (bem basico)
+ //definimos que id comeca com 0 (bem basico)
 let usuarios: User[] = []; //aqui temos uma lista de usuarios 
 
 export class UsersController {
@@ -28,13 +28,11 @@ export class UsersController {
       res.send(user); //retorna o usuario buscado 
     }
 
-    static save (req: Request, res: Response) { //esse é o metodo http que cria recebe a solicitacao do usuario
-      req.body //pega as informacoes inseridas no body
+    static async save (req: Request, res: Response) { //esse é o metodo http que cria recebe a solicitacao do usuario
       let user = req.body; //cria a variavel user e atribui o valor do body
-      user.id = ++id; // o ++ é incremento de id para cada usuario criado
-      usuarios.push(user); //adiciona o valor de user para o array
+      const userSalvo = await getFirestore().collection("users").add(user);
       res.send({
-        message: "O usuario foi criado com sucesso",
+        message: `Usuario ${userSalvo.id} foi criado com sucesso`,
       });
     }
 
