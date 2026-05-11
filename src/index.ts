@@ -1,22 +1,9 @@
-import express, {Request, Response} from "express";
+import express from "express";
+import { routes } from "./routes/index";
 
-const app = express();
+const app = express(); 
 
-app.get("/", (req, res) => {
-    res.send("Comeco da empower");
-});
-
-app.get("/users", (req: Request, res: Response) => {
-  let usuarios =[{
-    nome: "Victor Cellos",
-    idade: 19
-  },{
-    nome: "Eduardo Suzuki",
-    idade: 25
-  }];
-
-  res.send(usuarios);
-});
+routes(app); //
 
 app.listen(3000, () => {
     console.log("servidor rodando");
