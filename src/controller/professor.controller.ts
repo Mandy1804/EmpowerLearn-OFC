@@ -1,4 +1,4 @@
-import { Request, Response} from "express";
+import { Request, Response } from "express";
 import { getFirestore } from "firebase-admin/firestore";
 
 
@@ -7,7 +7,7 @@ import { getFirestore } from "firebase-admin/firestore";
 type Professor = {
     id: string;
     nome: string;
-    cpf : string;
+    cpf: string;
     rg: string;
     idade: string;
     email: string;
@@ -19,20 +19,20 @@ type Professor = {
     formacao_academica: string;
 };
 
-export class ProfessorControler{
-    static async getAll (req: Request, res: Response){
+export class ProfessorControler {
+    static async getAll(req: Request, res: Response) {
         const snapshot = await getFirestore().collection("professores").get();
-        const professores =  snapshot.docs.map(doc => {
-            return{
+        const professores = snapshot.docs.map(doc => {
+            return {
                 id: doc.id,
                 ...doc.data()
             }
         });
-        res.send(professores); 
+        res.send(professores);
     }
 
 
-    static async getById (req: Request, res: Response ){
+    static async getById(req: Request, res: Response) {
         let professorId = req.params.id;
         const doc = await getFirestore().collection("professores").doc(professorId).get();
         res.send({
@@ -41,7 +41,7 @@ export class ProfessorControler{
         })
     }
 
-    static async save (req: Request, res: Response){
+    static async save(req: Request, res: Response) {
         let professor = req.body;
         const professorSalvo = await getFirestore().collection("professores").add(professor);
         res.send({
@@ -49,10 +49,10 @@ export class ProfessorControler{
         })
     }
 
-    static update (req: Request, res: Response){
+    static update(req: Request, res: Response) {
         let professorId = req.params.id;
         let professor = req.body as Professor;
-        
+
         getFirestore().collection("professores").doc(professorId).set({
             nome: professor.nome,
             cpf: professor.cpf,
@@ -69,9 +69,9 @@ export class ProfessorControler{
         res.send({
             message: "Dados do Professor, atualizados com sucesso"
         });
-} 
+    }
 
-    static delete (req: Request, res: Response){
+    static delete(req: Request, res: Response) {
         let professorId = req.params.id;
 
         getFirestore().collection("professores").doc(professorId).delete();

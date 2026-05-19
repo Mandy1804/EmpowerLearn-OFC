@@ -1,4 +1,4 @@
-import { Request, Response} from "express";
+import { Request, Response } from "express";
 import { getFirestore } from "firebase-admin/firestore";
 
 type Instituicao = {
@@ -11,11 +11,11 @@ type Instituicao = {
     inscricao_estadual: string;
 }
 
-export class InstituicaoController{
-    static async getAll (req: Request, res: Response){
+export class InstituicaoController {
+    static async getAll(req: Request, res: Response) {
         const snapshot = await getFirestore().collection("instituicoes").get();
         const instituicoes = snapshot.docs.map(doc => {
-            return{
+            return {
                 id: doc.id,
                 ...doc.data()
             }
@@ -23,7 +23,7 @@ export class InstituicaoController{
         res.send(instituicoes);
     }
 
-    static async getById (req: Request, res: Response){
+    static async getById(req: Request, res: Response) {
         let instituicaoId = req.params.id;
         const doc = await getFirestore().collection("instituicoes").doc(instituicaoId).get();
         res.send({
@@ -32,7 +32,7 @@ export class InstituicaoController{
         });
     }
 
-    static async save (req: Request, res: Response){
+    static async save(req: Request, res: Response) {
         let instituicao = req.body;
         const instituicaoSalvo = await getFirestore().collection("instituicoes").add(instituicao);
         res.send({
@@ -40,7 +40,7 @@ export class InstituicaoController{
         });
     }
 
-    static update (req: Request, res: Response){
+    static update(req: Request, res: Response) {
         let instituicaoId = req.params.id;
         let instituicao = req.body as Instituicao;
 
@@ -58,7 +58,7 @@ export class InstituicaoController{
         });
     }
 
-    static delete (req: Request, res: Response){
+    static delete(req: Request, res: Response) {
         let instituicaoId = req.params.id;
 
         getFirestore().collection("instituicoes").doc(instituicaoId).delete();
