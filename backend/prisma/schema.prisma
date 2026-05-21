@@ -11,27 +11,27 @@ datasource db {
 }
 
 model Instituicao {
-  id        Int       @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   nome      String
-  createdAt DateTime  @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
-  usuarios  Usuario[]
-  cursos    Curso[]
+  usuarios Usuario[]
+  cursos   Curso[]
 
   @@map("instituicoes")
 }
 
 model Usuario {
-  id            Int       @id @default(autoincrement())
+  id            Int      @id @default(autoincrement())
   nome          String
-  email         String    @unique
-  senhaHash     String    @map("senha_hash")
+  email         String   @unique
+  senhaHash     String   @map("senha_hash")
   tipo          String
-  ativo         Boolean   @default(true)
-  fotoUrl       String?   @map("foto_url")
-  instituicaoId Int?      @map("instituicao_id")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  ativo         Boolean  @default(true)
+  fotoUrl       String?  @map("foto_url")
+  instituicaoId Int?     @map("instituicao_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   instituicao           Instituicao?       @relation(fields: [instituicaoId], references: [id])
   cursosCriados         Curso[]            @relation("CursosCriados")
@@ -44,10 +44,13 @@ model Usuario {
   assinaturas           Assinatura[]
   notificacoes          Notificacao[]
   mensagensEnviadas     MensagemChat[]     @relation("AutorMensagem")
+  historico             Historico[]
+  favoritos             Favorito[]
+  notas                 NotaAluno[]
+  refreshTokens         RefreshToken[]
 
   @@map("usuarios")
 }
-
 
 model Curso {
   id            Int      @id @default(autoincrement())
@@ -57,11 +60,13 @@ model Curso {
   premium       Boolean  @default(false)
   instituicaoId Int?     @map("instituicao_id")
   criadorId     Int?     @map("criador_id")
+  categoriaId   Int?     @map("categoria_id")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   instituicao Instituicao? @relation(fields: [instituicaoId], references: [id])
   criador     Usuario?     @relation("CursosCriados", fields: [criadorId], references: [id])
+  categoria   Categoria?   @relation(fields: [categoriaId], references: [id])
   matriculas  Matricula[]
   materias    Materia[]
   postsForum  PostForum[]
@@ -75,7 +80,6 @@ model Materia {
   professorId Int      @map("professor_id")
   titulo      String
   conteudo    String
-  videoUrl    String?  @map("video_url")
   pdfUrl      String?  @map("pdf_url")
   resumoIa    String?  @map("resumo_ia")
   ordem       Int
@@ -86,10 +90,12 @@ model Materia {
   professor Usuario            @relation("MateriasMinistradas", fields: [professorId], references: [id])
   progresso ProgressoMateria[]
   tarefas   Tarefa[]
+  videos    Video[]
+  historico Historico[]
+  notas     NotaAluno[]
 
   @@map("materias")
 }
-
 
 model Matricula {
   id            Int      @id @default(autoincrement())
@@ -116,7 +122,6 @@ model ProgressoMateria {
   @@unique([alunoId, materiaId])
   @@map("progresso_materias")
 }
-
 
 model Tarefa {
   id        Int      @id @default(autoincrement())
@@ -148,7 +153,6 @@ model Submissao {
   @@unique([tarefaId, alunoId])
   @@map("submissoes")
 }
-
 
 model PostForum {
   id        Int      @id @default(autoincrement())
@@ -205,8 +209,6 @@ model Assinatura {
   @@map("assinaturas")
 }
 
-
-
 model Notificacao {
   id        Int      @id @default(autoincrement())
   usuarioId Int      @map("usuario_id")
@@ -233,4 +235,79 @@ model MensagemChat {
   autor Usuario @relation("AutorMensagem", fields: [autorId], references: [id])
 
   @@map("mensagens_chat")
+}
+
+model Categoria {
+  id        Int      @id @default(autoincrement())
+  nome      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  cursos Curso[]
+
+  @@map("categorias")
+}
+
+model Video {
+  id        Int      @id @default(autoincrement())
+  materiaId Int      @map("materia_id")
+  titulo    String
+  url       String
+  ordem     Int
+  createdAt DateTime @default(now()) @map("created_at")
+
+  materia Materia @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+
+  @@map("videos")
+}
+
+model Historico {
+  id         Int      @id @default(autoincrement())
+  alunoId    Int      @map("aluno_id")
+  materiaId  Int      @map("materia_id")
+  dataAcesso DateTime @default(now()) @map("data_acesso")
+
+  aluno   Usuario @relation(fields: [alunoId], references: [id], onDelete: Cascade)
+  materia Materia @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+
+  @@map("historico")
+}
+
+model Favorito {
+  id        Int      @id @default(autoincrement())
+  alunoId   Int      @map("aluno_id")
+  tipo      String // "curso" ou "materia"
+  refId     Int      @map("ref_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  aluno Usuario @relation(fields: [alunoId], references: [id], onDelete: Cascade)
+
+  @@unique([alunoId, tipo, refId])
+  @@map("favoritos")
+}
+
+model NotaAluno {
+  id        Int      @id @default(autoincrement())
+  alunoId   Int      @map("aluno_id")
+  materiaId Int      @map("materia_id")
+  titulo    String
+  conteudo  String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  aluno   Usuario @relation(fields: [alunoId], references: [id], onDelete: Cascade)
+  materia Materia @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+
+  @@map("notas_aluno")
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  usuarioId Int      @map("usuario_id")
+  expiraEm  DateTime @map("expira_em")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
 }
