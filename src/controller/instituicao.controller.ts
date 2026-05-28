@@ -1,18 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { getFirestore } from "firebase-admin/firestore";
 import { NotFoundError } from "../errors/not-found.error";
-import { ValidationError } from "../errors/validation.error";
-
-type Instituicao = {
-    id: string;
-    razao_social: string;
-    cnpj: string;
-    email: string;
-    telefone: string;
-    endereco: string;
-    inscricao_estadual: string;
-}
-
+import { Instituicao } from "../models/instituicao.model";
 export class InstituicaoController {
     static async getAll(req: Request, res: Response) {
         const snapshot = await getFirestore().collection("instituicoes").get();
@@ -41,10 +30,6 @@ export class InstituicaoController {
 
     static async save(req: Request, res: Response) {
         let instituicao = req.body;
-
-        if (!instituicao.email || instituicao.email?.length === 0) {
-            throw new ValidationError("O email é obrigatório");
-        }
 
         const instituicaoSalvo = await getFirestore().collection("instituicoes").add(instituicao);
         res.send({

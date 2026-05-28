@@ -1,26 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { getFirestore } from "firebase-admin/firestore";
 import { NotFoundError } from "../errors/not-found.error";
-import { ValidationError } from "../errors/validation.error";
-
-
-
-
-type Professor = {
-    id: string;
-    nome: string;
-    cpf: string;
-    rg: string;
-    idade: string;
-    email: string;
-    telefone: string;
-    data_nascimento: Date;
-    endereco: string;
-
-    disciplina: string;
-    formacao_academica: string;
-};
-
+import { Professor } from "../models/professor.model";
 export class ProfessorControler {
     static async getAll(req: Request, res: Response, next: NextFunction) {
         const snapshot = await getFirestore().collection("professores").get();
@@ -49,10 +30,6 @@ export class ProfessorControler {
 
     static async save(req: Request, res: Response, next: NextFunction) {
         let professor = req.body;
-
-        if (!professor.email || professor.email?.legth === 0) {
-            throw new ValidationError("O email é obrigatório");
-        }
 
         const professorSalvo = await getFirestore().collection("professores").add(professor);
         res.send({
