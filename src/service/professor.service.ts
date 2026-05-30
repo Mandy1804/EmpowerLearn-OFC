@@ -1,57 +1,36 @@
-import { getFirestore } from "firebase-admin/firestore";
 import { Professor } from "../models/professor.model";
 import { NotFoundError } from "../errors/not-found.error";
+import { ProfessorRepository } from "../repositorys/professor.repository";
 
 export class ProfessorService {
 
-    async getAll(){
-        const snapshot = await getFirestore().collection("professores").get();
-        return snapshot.docs.map(doc => {
-            return {
-                id: doc.id,
-                ...doc.data()
-            }
-        }) as Professor[];
+    private professorRepository: ProfessorRepository;
+
+    constructor(){
+        this.professorRepository = new ProfessorRepository;
+    }
+
+    async getAll(): Promise<Professor[]>{
+        return this.professorRepository.getAll()
     }
 
     async getById(id: string): Promise<Professor>{
-        const doc = await getFirestore().collection("professores").doc(id).get();
-        if (doc.exists) {
-            return{
-                id: doc.id,
-                ...doc.data()
-            } as Professor;
-        } else {
-            throw new NotFoundError("Professor não foi encontrado");
+        const professor = await this.professorRepository.getById(id);
+        if(!professor){
+            throw new NotFoundError("Professor não encontrado")
         }
+        return professor;
     }
 
     async save(professor: Professor): Promise<void>{
-        await getFirestore().collection("professores").add(professor);
+        await this.professorRepository.save(professor);
     }
 
     async update(id: string, professor: Professor): Promise<void> {
-        const docRef = getFirestore().collection("professores").doc(id);
-
-        if ((await docRef.get()).exists) {
-            await docRef.set({
-                nome: professor.nome,
-                cpf: professor.cpf,
-                rg: professor.rg,
-                idade: professor.idade,
-                email: professor.email,
-                telefone: professor.telefone,
-                data_nascimento: professor.data_nascimento,
-                endereco: professor.endereco,
-                disciplina: professor.disciplina,
-                formacao_academica: professor.formacao_academica
-            });
-        } else {
-            throw new NotFoundError("Professor não encontrado");
-        }
+        await this.professorRepository.update(id, professor);
     }
 
     async delete(id: string): Promise<void>{
-        getFirestore().collection("professores").doc(id).delete();
+        await this.professorRepository.delete(id);
     }
 }

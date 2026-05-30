@@ -1,53 +1,36 @@
-import { getFirestore } from "firebase-admin/firestore";
 import { User } from "../models/users.model";
+import { UserRepository } from "../repositorys/user.repository";
 import { NotFoundError } from "../errors/not-found.error";
 
 export class UserService {
 
-    async getAll(): Promise<User[]> {
-        const snapshot = await getFirestore().collection("users").get(); //aqui estamos pegando a colecao de usuarios do firestore e usando o metodo get para obter os dados
-        return snapshot.docs.map(doc => { //
-            return {
-                id: doc.id,
-                ...doc.data()
-            };
-        }) as User[];  
+    private userRepository: UserRepository;
+
+    constructor() {
+        this.userRepository = new UserRepository();
     }
-    
+
+    async getAll(): Promise<User[]> {
+        return this.userRepository.getAll();
+    }
+
     async getById(id: string): Promise<User>{
-        const doc = await getFirestore().collection("users").doc(id).get(); //aqui estamos pegando a colecao de usuarios do firestore, usando o doc para pegar os dados/documentos e o get para mostrar os dados pelo id
-        if (doc.exists) {
-            return {
-                id: doc.id,
-                ...doc.data()
-            } as User;
-        }else {
-                throw new NotFoundError("Usuario não foi encontrado");
-        }//retorna o usuario buscado
+        const user = await this.userRepository.getById(id);
+        if (!user){
+           throw new NotFoundError("Usuario não encontrado")
+        }
+        return user;
     }
 
     async save(user: User): Promise<void> {
-        await getFirestore().collection("users").add(user);
+        await this.userRepository.save(user);
     }
 
     async update(id: string, user: User): Promise<void>{
-        const docRef = getFirestore().collection("users").doc(id);
-
-        if ((await docRef.get()).exists) {
-            await docRef.set({
-                nome: user.nome,
-                cpf: user.cpf,
-                idade: user.idade,
-                email: user.email,
-                telefone: user.telefone,
-                data_nascimento: user.data_nascimento,
-            });
-        } else {
-            throw new NotFoundError("Professor não encontrado");
-        }
+        return this.userRepository.update(id, user);
     }
 
     async delete(id: string): Promise<void>{
-      getFirestore().collection("users").doc(id).delete();
+        await this.userRepository.delete(id);
     }
 }

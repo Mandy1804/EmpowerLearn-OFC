@@ -1,53 +1,36 @@
-import { getFirestore } from "firebase-admin/firestore";
 import { Instituicao } from "../models/instituicao.model";
 import { NotFoundError } from "../errors/not-found.error";
+import { InstituicaoRepository } from "../repositorys/instituicao.repository";
 
 export class InstituicaoService {
 
+    private instituicaoRepository: InstituicaoRepository;
+
+    constructor(){
+        this.instituicaoRepository = new InstituicaoRepository;
+    }
+
     async getAll(): Promise<Instituicao[]> {
-        const snapshot = await getFirestore().collection("instituicoes").get();
-        return snapshot.docs.map(doc => {
-            return {
-                id: doc.id,
-                ...doc.data()
-            }
-        }) as Instituicao[];
+        return this.instituicaoRepository.getAll();
     }
 
     async getById(id: string): Promise<Instituicao>{
-        const doc = await getFirestore().collection("instituicoes").doc(id).get();
-        if (doc.exists) {
-            return{
-                id: doc.id,
-                ...doc.data()
-            } as Instituicao;
-        } else {
+        const instituicao = await this.instituicaoRepository.getById(id);
+        if(!instituicao){
             throw new NotFoundError("Instituição não encontrada");
-        }   
+        }
+        return instituicao;
     }
 
     async save(instituicao: Instituicao): Promise<void>{
-        await getFirestore().collection("instituicoes").add(instituicao);
+        await this.instituicaoRepository.save(instituicao);
     }
 
     async update (id: string, instituicao: Instituicao): Promise<void> {
-        let docRef = getFirestore().collection("instituicoes").doc(id);
-
-        if ((await docRef.get()).exists) {
-            await docRef.set({
-                razao_social: instituicao.razao_social,
-                cnpj: instituicao.cnpj,
-                email: instituicao.email,
-                telefone: instituicao.telefone,
-                endereco: instituicao.endereco,
-                inscricao_estadual: instituicao.inscricao_estadual
-            });
-        } else {
-            throw new NotFoundError("Instituição não encontrada");
-        }
+        await this.instituicaoRepository.update(id, instituicao);
     }
 
     async delete(id: string): Promise<void> {
-        getFirestore().collection("instituicoes").doc(id).delete();
+        await this.instituicaoRepository.delete(id);
     }
 }
