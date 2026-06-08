@@ -11,10 +11,12 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@prisma/client": "^7.8.0",
     "celebrate": "^15.0.3",
     "express": "^4.19.2",
     "express-async-handler": "^1.2.0",
-    "firebase-admin": "^12.3.1"
+    "firebase-admin": "^12.3.1",
+    "prisma": "^7.8.0"
   },
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.13",

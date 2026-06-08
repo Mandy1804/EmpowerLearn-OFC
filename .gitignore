@@ -3,3 +3,5 @@
 firebase-adminsdk.json.json
 .env
 firebase-adminsdk.json
+
+/src/generated/prisma
