@@ -6,9 +6,13 @@
 node_modules/
 dist/
 build/
+lib/
 coverage/
 *.log
 npm-debug.log*
+
+# Firebase
+firebase-adminsdk.json
 
 # Flutter / Mobile
 mobile/build/
@@ -35,7 +39,7 @@ mobile/ios/Pods/
 mobile/ios/.symlinks/
 mobile/ios/Runner.xcworkspace/
 
-# Docker - dados dos containers (NUNCA versionar)
+# Docker
 postgres-data/
 redis-data/
 rabbitmq-data/
