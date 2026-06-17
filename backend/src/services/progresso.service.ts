@@ -1,4 +1,4 @@
-import { ProgressoRepository } from "../repositories/progresso.repositories";
+import { ProgressoRepository } from "../repositories/progresso.repository";
 
 export class ProgressoService {
     private repo = new ProgressoRepository();
