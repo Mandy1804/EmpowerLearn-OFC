@@ -12,6 +12,7 @@ import { postForumRoutes } from "./post_forum.route";
 import { comentarioRoutes } from "./comentario.route";
 import { planoRoutes } from "./plano.route";
 import { assinaturaRoutes } from "./assinatura.route";
+import { authRoutes } from "./auth.route";
 import { notificacaoRoutes } from "./notificacao.route";
 import { mensagemRoutes } from "./mensagem_chat.route";
 import { categoriaRoutes } from "./categoria.route";
@@ -21,8 +22,9 @@ import { favoritoRoutes } from "./favorito.route";
 import { notaRoutes } from "./nota_aluno.route";
 import { refreshTokenRoutes } from "./refresh_token.route";
 
+
 const allRoutes = [
-    userRoutes, professorRoutes, instituicaoRoutes,
+    authRoutes, userRoutes, professorRoutes, instituicaoRoutes,
     cursoRoutes, materiaRoutes, matriculaRoutes,
     progressoRoutes, tarefaRoutes, submissaoRoutes,
     postForumRoutes, comentarioRoutes, planoRoutes,
