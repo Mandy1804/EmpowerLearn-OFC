@@ -12,6 +12,7 @@ import { submissaoRoutes } from "./submissao.route";
 import { postForumRoutes } from "./post_forum.route";
 import { comentarioRoutes } from "./comentario.route";
 import { planoRoutes } from "./plano.route";
+import { stripeRoutes } from "./stripe.route";
 import { assinaturaRoutes } from "./assinatura.route";
 import { notificacaoRoutes } from "./notificacao.route";
 import { mensagemRoutes } from "./mensagem_chat.route";
@@ -27,7 +28,8 @@ export const routes = (app: express.Express) => {
     app.use(express.json());
 
     app.use(authRoutes);
-
+    app.use('/stripe/webhook', express.raw({ type: 'application/json' }), stripeRoutes);
+    
     app.use(authMiddleware);
 
     app.use(userRoutes);
