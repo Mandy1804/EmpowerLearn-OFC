@@ -7,7 +7,7 @@ export class InstituicaoController {
     }
 
     static async getById(req: Request, res: Response, next: NextFunction) {
-        let instituicaoId = req.params.id;
+        let instituicaoId = req.params["id"] as string;
         res.send(await new InstituicaoService().getById(instituicaoId)); //aqui estamos usando o instanceId para pegar o id da instituição e mostrar os dados da instituição buscada
     }
 
@@ -19,7 +19,7 @@ export class InstituicaoController {
     }
 
     static async update(req: Request, res: Response) {
-        let instituicaoId = req.params.id;
+        let instituicaoId = req.params["id"] as string;
         let instituicao = req.body as Instituicao;
         await new InstituicaoService().update(instituicaoId, instituicao);
         res.send({
@@ -28,7 +28,7 @@ export class InstituicaoController {
     }
 
     static delete(req: Request, res: Response) {
-        let instituicaoId = req.params.id;
+        let instituicaoId = req.params["id"] as string;
         new InstituicaoService().delete(instituicaoId);
         res.status(204).end()
     }

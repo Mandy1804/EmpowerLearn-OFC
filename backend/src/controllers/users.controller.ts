@@ -14,7 +14,7 @@ export class UsersController {
   }
 
   static async getById (req: Request, res: Response, next: NextFunction) { //esse metodo get é para retornar o usuario especifico por id
-    let userId = req.params.id; //pega o id do parametro da url
+    let userId = req.params["id"] as string; //pega o id do parametro da url
     res.send(await new UserService().getById(userId)); //retorna o usuario buscado pelo id
   }
 
@@ -26,7 +26,7 @@ export class UsersController {
   }
 
   static async update (req: Request, res: Response, next: NextFunction) {
-    let userId = req.params.id; //obteve o id do usuario pelo parametro
+    let userId = req.params["id"] as string; //obteve o id do usuario pelo parametro
     let user = req.body as User; // pegou as informacoes do corpo
     await new UserService().update(userId, user);
     res.send({
@@ -35,7 +35,7 @@ export class UsersController {
   }
 
   static async delete (req: Request, res: Response, next: NextFunction) {
-    let userId = req.params.id;
+    let userId = req.params["id"] as string;
     await new UserService().delete(userId);
     res.status(204).end();
   } 

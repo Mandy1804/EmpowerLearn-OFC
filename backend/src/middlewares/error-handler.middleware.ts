@@ -7,7 +7,7 @@ import { errors } from "celebrate";
 export const errorHandler = (app: Express.Express) => {
     app.use(errors());
     app.use((error: Error, req: Request, res: Response, next: NextFunction) => {
-        console.error("ERRO CAPTURADO:", error.message);
+        console.error("ERRO CAPTURADO:", error);
         if (error instanceof ValidationError) {
             error.send(res);
         } else if(error instanceof NotFoundError){

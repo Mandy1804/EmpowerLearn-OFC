@@ -8,7 +8,7 @@ export class ProfessorControler {
 
 
     static async getById(req: Request, res: Response, next: NextFunction) {
-        let professorId = req.params.id;
+        let professorId = req.params["id"] as string;
         res.send(await new ProfessorService().getById(professorId))
     }
 
@@ -20,7 +20,7 @@ export class ProfessorControler {
     }
 
     static async update(req: Request, res: Response, next: NextFunction) {
-        let professorId = req.params.id;
+        let professorId = req.params["id"] as string;
         let professor = req.body as Professor;
         await new ProfessorService().update(professorId, professor);
         res.send({
@@ -29,7 +29,7 @@ export class ProfessorControler {
     }
 
     static async delete(req: Request, res: Response, next: NextFunction) {
-        let professorId = req.params.id;
+        let professorId = req.params["id"] as string;
         await new ProfessorService().delete(professorId);
         res.status(204).end();
     }
