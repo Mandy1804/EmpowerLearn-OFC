@@ -4,16 +4,15 @@ import { InternalServerError } from "../errors/internal-server.erro";
 import { NotFoundError } from "../errors/not-found.error";
 import { errors } from "celebrate";
 
-
 export const errorHandler = (app: Express.Express) => {
-    app.use(errors()); //errors e o middleware do celebrate para tratar os erros de validacao 
+    app.use(errors());
     app.use((error: Error, req: Request, res: Response, next: NextFunction) => {
+        console.error("ERRO CAPTURADO:", error.message);
         if (error instanceof ValidationError) {
             error.send(res);
         } else if(error instanceof NotFoundError){
             error.send(res);
-        }
-        else {
+        } else {
             new InternalServerError().send(res);
         }
     });

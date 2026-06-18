@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { Professor } from "../models/professor.model";
-import { ProfessorService } from "../service/professor.service";
+import { ProfessorService } from "../services/professor.service";
 export class ProfessorControler {
     static async getAll(req: Request, res: Response, next: NextFunction) {
         res.send(await new ProfessorService().getAll());

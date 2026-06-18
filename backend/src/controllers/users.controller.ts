@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';    
 import { User } from '../models/users.model';
-import { UserService } from '../service/user.service';
+import { UserService } from '../services/user.service';
 
 
 //get: esse metodo retorna todos os usuarios

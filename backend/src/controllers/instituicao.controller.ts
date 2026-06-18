@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { Instituicao } from "../models/instituicao.model";
-import { InstituicaoService } from "../service/instituicao.service";
+import { InstituicaoService } from "../services/instituicao.service";
 export class InstituicaoController {
     static async getAll(req: Request, res: Response) {
         res.send(await new InstituicaoService().getAll());
