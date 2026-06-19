@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { UserRepository } from '../repositories/user.repository';
 import prisma from '../config/prisma';
+import { ValidationError } from '../errors/validation.error';
 
 export class AuthService {
 
@@ -12,6 +13,10 @@ export class AuthService {
     }
 
     async register(data: any) {
+        const emailExistente = await this.userRepository.findByEmail(data.email);
+        if (emailExistente) {
+            throw new ValidationError('Email já cadastrado');
+        }
         const senhaHash = await bcrypt.hash(data.senha, 10);
         return this.userRepository.save({
             nome: data.nome,
@@ -59,6 +64,18 @@ export class AuthService {
     }
 
     async refreshToken(token: string) {
+        const tokenSalvo = await prisma.refreshToken.findUnique({
+            where: { token }
+        });
+
+        if (!tokenSalvo) {
+            throw new ValidationError('Refresh token inválido');
+        }
+
+        if (tokenSalvo.expiraEm < new Date()) {
+            throw new ValidationError('Refresh token expirado');
+        }
+
         const payload = jwt.verify(
             token,
             process.env.JWT_REFRESH_SECRET as string
