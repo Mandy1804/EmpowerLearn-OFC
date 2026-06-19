@@ -9,6 +9,7 @@ import { matriculaRoutes } from "./matricula.route";
 import { progressoRoutes } from "./progresso_materia.route";
 import { tarefaRoutes } from "./tarefa.route";
 import { submissaoRoutes } from "./submissao.route";
+import { notificacaoRealtimeRoutes } from "./notificacao-realtime.route";
 import { postForumRoutes } from "./post_forum.route";
 import { comentarioRoutes } from "./comentario.route";
 import { planoRoutes } from "./plano.route";
@@ -35,6 +36,7 @@ export const routes = (app: express.Express) => {
     app.use(instituicaoRoutes);
     app.use(cursoRoutes);
     app.use(materiaRoutes);
+    app.use(notificacaoRealtimeRoutes);
     app.use(matriculaRoutes);
     app.use(progressoRoutes);
     app.use(tarefaRoutes);
