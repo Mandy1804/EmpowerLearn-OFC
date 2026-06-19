@@ -1,5 +1,5 @@
 import express from "express";
-import { ProfessorControler } from "../controller/professor.controller";
+import { ProfessorControler } from "../controllers/professor.controller";
 import asyncHandler from "express-async-handler";
 
 export const professorRoutes = express.Router();

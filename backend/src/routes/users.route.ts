@@ -1,5 +1,5 @@
 import express from "express";
-import { UsersController } from "../controller/users.controller";
+import { UsersController } from "../controllers/users.controller";
 import asyncHandler  from "express-async-handler";
 import { celebrate, Segments } from "celebrate";
 import { userSchema } from "../models/users.model";

@@ -1,5 +1,5 @@
 import express from "express";
-import { InstituicaoController } from "../controller/instituicao.controller";
+import { InstituicaoController } from "../controllers/instituicao.controller";
 import asyncHandler from "express-async-handler";
 import { celebrate, Segments } from "celebrate";
 import { instituicaoSchema } from "../models/instituicao.model";

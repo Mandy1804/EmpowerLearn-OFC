@@ -1,36 +1,26 @@
-import { NextFunction, Request, Response } from "express";
-import { Instituicao } from "../models/instituicao.model";
-import { InstituicaoService } from "../service/instituicao.service";
+import { Request, Response, NextFunction } from 'express';
+import { InstituicaoService } from '../services/instituicao.service';
+
 export class InstituicaoController {
-    static async getAll(req: Request, res: Response) {
+    static async getAll(req: Request, res: Response, next: NextFunction) {
         res.send(await new InstituicaoService().getAll());
     }
-
     static async getById(req: Request, res: Response, next: NextFunction) {
-        let instituicaoId = req.params.id;
-        res.send(await new InstituicaoService().getById(instituicaoId)); //aqui estamos usando o instanceId para pegar o id da instituição e mostrar os dados da instituição buscada
+        const id = Number(req.params['id']);
+        res.send(await new InstituicaoService().getById(id));
     }
-
-    static async save(req: Request, res: Response) {
+    static async save(req: Request, res: Response, next: NextFunction) {
         await new InstituicaoService().save(req.body);
-        res.send({
-            message: `Instituição criaca com sucesso`
-        });
+        res.status(201).send({ message: 'Instituição criada com sucesso' });
     }
-
-    static async update(req: Request, res: Response) {
-        let instituicaoId = req.params.id;
-        let instituicao = req.body as Instituicao;
-        await new InstituicaoService().update(instituicaoId, instituicao);
-        res.send({
-            message: "instituição atualizada com sucesso"
-        });
+    static async update(req: Request, res: Response, next: NextFunction) {
+        const id = Number(req.params['id']);
+        await new InstituicaoService().update(id, req.body);
+        res.send({ message: 'Instituição atualizada com sucesso' });
     }
-
-    static delete(req: Request, res: Response) {
-        let instituicaoId = req.params.id;
-        new InstituicaoService().delete(instituicaoId);
-        res.status(204).end()
+    static async delete(req: Request, res: Response, next: NextFunction) {
+        const id = Number(req.params['id']);
+        await new InstituicaoService().delete(id);
+        res.status(204).end();
     }
 }
-
