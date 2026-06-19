@@ -15,6 +15,12 @@ export class UserRepository {
         return user;
     }
 
+    async findByEmail(email: string) {
+        return await prisma.usuario.findUnique({
+            where: { email }
+        });
+    }
+    
     async save(data: any) {
         return await prisma.usuario.create({ data });
     }

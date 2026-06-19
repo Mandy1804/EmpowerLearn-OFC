@@ -1,4 +1,5 @@
 import express from "express";
+import { authRoutes } from "./auth.route";
 import { userRoutes } from "./users.route";
 import { professorRoutes } from "./professor.route";
 import { instituicaoRoutes } from "./instituicao.route";
@@ -20,18 +21,34 @@ import { historicoRoutes } from "./historico.route";
 import { favoritoRoutes } from "./favorito.route";
 import { notaRoutes } from "./nota_aluno.route";
 import { refreshTokenRoutes } from "./refresh_token.route";
-
-const allRoutes = [
-    userRoutes, professorRoutes, instituicaoRoutes,
-    cursoRoutes, materiaRoutes, matriculaRoutes,
-    progressoRoutes, tarefaRoutes, submissaoRoutes,
-    postForumRoutes, comentarioRoutes, planoRoutes,
-    assinaturaRoutes, notificacaoRoutes, mensagemRoutes,
-    categoriaRoutes, videoRoutes, historicoRoutes,
-    favoritoRoutes, notaRoutes, refreshTokenRoutes
-];
+import { authMiddleware } from "../middlewares/auth.middleware";
 
 export const routes = (app: express.Express) => {
     app.use(express.json());
-    allRoutes.forEach(route => app.use(route));
+
+    app.use(authRoutes);
+
+    app.use(authMiddleware);
+
+    app.use(userRoutes);
+    app.use(professorRoutes);
+    app.use(instituicaoRoutes);
+    app.use(cursoRoutes);
+    app.use(materiaRoutes);
+    app.use(matriculaRoutes);
+    app.use(progressoRoutes);
+    app.use(tarefaRoutes);
+    app.use(submissaoRoutes);
+    app.use(postForumRoutes);
+    app.use(comentarioRoutes);
+    app.use(planoRoutes);
+    app.use(assinaturaRoutes);
+    app.use(notificacaoRoutes);
+    app.use(mensagemRoutes);
+    app.use(categoriaRoutes);
+    app.use(videoRoutes);
+    app.use(historicoRoutes);
+    app.use(favoritoRoutes);
+    app.use(notaRoutes);
+    app.use(refreshTokenRoutes);
 };
