@@ -1,5 +1,6 @@
 import prisma from "../config/prisma";
 import { NotFoundError } from "../errors/not-found.error";
+import bcrypt from 'bcrypt';
 
 export class ProfessorRepository {
 
@@ -18,7 +19,11 @@ export class ProfessorRepository {
     }
 
     async save(data: any) {
-        return await prisma.usuario.create({ data });
+    if (data.senha) {
+        data.senhaHash = await bcrypt.hash(data.senha, 10);
+        delete data.senha;
+    }
+    return await prisma.usuario.create({ data });
     }
 
     async update(id: number, data: any) {
