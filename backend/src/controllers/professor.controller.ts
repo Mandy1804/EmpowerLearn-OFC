@@ -1,3 +1,4 @@
+import { parseId } from '../utils/parse-id';
 import { Request, Response, NextFunction } from 'express';
 import { ProfessorService } from '../services/professor.service';
 
@@ -6,7 +7,7 @@ export class ProfessorControler {
         res.send(await new ProfessorService().getAll());
     }
     static async getById(req: Request, res: Response, next: NextFunction) {
-        const id = Number(req.params['id']);
+        const id = parseId(req);
         res.send(await new ProfessorService().getById(id));
     }
     static async save(req: Request, res: Response, next: NextFunction) {
@@ -14,12 +15,12 @@ export class ProfessorControler {
         res.status(201).send({ message: 'Professor criado com sucesso' });
     }
     static async update(req: Request, res: Response, next: NextFunction) {
-        const id = Number(req.params['id']);
+        const id = parseId(req);
         await new ProfessorService().update(id, req.body);
         res.send({ message: 'Professor atualizado com sucesso' });
     }
     static async delete(req: Request, res: Response, next: NextFunction) {
-        const id = Number(req.params['id']);
+        const id = parseId(req);
         await new ProfessorService().delete(id);
         res.status(204).end();
     }
