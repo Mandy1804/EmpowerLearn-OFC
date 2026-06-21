@@ -1,12 +1,11 @@
 import prisma from "../config/prisma";
 import { NotFoundError } from "../errors/not-found.error";
-import bcrypt from 'bcrypt';
 
 export class ProfessorRepository {
 
     async getAll() {
         return await prisma.usuario.findMany({
-            where: { tipo: "professor" }
+            where: { tipo: "professor" as any }
         });
     }
 
@@ -19,11 +18,7 @@ export class ProfessorRepository {
     }
 
     async save(data: any) {
-    if (data.senha) {
-        data.senhaHash = await bcrypt.hash(data.senha, 10);
-        delete data.senha;
-    }
-    return await prisma.usuario.create({ data });
+        return await prisma.usuario.create({ data });
     }
 
     async update(id: number, data: any) {

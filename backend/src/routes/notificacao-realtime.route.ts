@@ -1,7 +1,6 @@
 import express from 'express';
 import asyncHandler from 'express-async-handler';
 import { NotificacaoRealtimeService } from '../services/notificacao-realtime.service';
-import { parseId } from '../utils/parse-id';
 
 export const notificacaoRealtimeRoutes = express.Router();
 

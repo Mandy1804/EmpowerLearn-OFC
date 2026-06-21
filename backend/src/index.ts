@@ -28,7 +28,7 @@ io.on("connection", (socket) => {
     });
 });
 
-app.use(express.json());
+
 routes(app);
 pageNotFoundHandler(app);
 errorHandler(app);
