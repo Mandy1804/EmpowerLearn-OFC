@@ -1,3 +1,4 @@
+import { parseId } from '../utils/parse-id';
 import { Request, Response, NextFunction } from 'express';
 import { CategoriaService } from '../services/categoria.service';
 
@@ -6,7 +7,7 @@ export class CategoriaController {
         res.send(await new CategoriaService().getAll());
     }
     static async getById(req: Request, res: Response, next: NextFunction) {
-        const id = Number(req.params['id']);
+        const id = parseId(req);
         res.send(await new CategoriaService().getById(id));
     }
     static async save(req: Request, res: Response, next: NextFunction) {
@@ -14,12 +15,12 @@ export class CategoriaController {
         res.status(201).send({ message: 'Categoria criada com sucesso' });
     }
     static async update(req: Request, res: Response, next: NextFunction) {
-        const id = Number(req.params['id']);
+        const id = parseId(req);
         await new CategoriaService().update(id, req.body);
         res.send({ message: 'Categoria atualizada com sucesso' });
     }
     static async delete(req: Request, res: Response, next: NextFunction) {
-        const id = Number(req.params['id']);
+        const id = parseId(req);
         await new CategoriaService().delete(id);
         res.status(204).end();
     }

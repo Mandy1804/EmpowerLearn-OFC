@@ -1,3 +1,4 @@
+import { parseId } from '../utils/parse-id';
 import { Request, Response, NextFunction } from 'express';
 import { TarefaService } from '../services/tarefa.service';
 
@@ -6,7 +7,7 @@ export class TarefaController {
         res.send(await new TarefaService().getAll());
     }
     static async getById(req: Request, res: Response, next: NextFunction) {
-        const id = Number(req.params['id']);
+        const id = parseId(req);
         res.send(await new TarefaService().getById(id));
     }
     static async save(req: Request, res: Response, next: NextFunction) {
@@ -14,12 +15,12 @@ export class TarefaController {
         res.status(201).send({ message: 'Tarefa criada com sucesso' });
     }
     static async update(req: Request, res: Response, next: NextFunction) {
-        const id = Number(req.params['id']);
+        const id = parseId(req);
         await new TarefaService().update(id, req.body);
         res.send({ message: 'Tarefa atualizada com sucesso' });
     }
     static async delete(req: Request, res: Response, next: NextFunction) {
-        const id = Number(req.params['id']);
+        const id = parseId(req);
         await new TarefaService().delete(id);
         res.status(204).end();
     }
