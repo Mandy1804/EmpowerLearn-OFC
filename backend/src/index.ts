@@ -4,8 +4,11 @@ import { Server } from "socket.io";
 import { routes } from "./routes/index";
 import { errorHandler } from "./middlewares/error-handler.middleware";
 import { pageNotFoundHandler } from "./middlewares/page-not-found.middleware";
+import cors from "cors";
+
 
 const app = express();
+app.use(cors({ origin: "*" }));
 const httpServer = createServer(app);
 
 export const io = new Server(httpServer, {
