@@ -5,7 +5,7 @@ export class ProfessorRepository {
 
     async getAll() {
         return await prisma.usuario.findMany({
-            where: { tipo: "professor" }
+            where: { tipo: "professor" as any }
         });
     }
 
