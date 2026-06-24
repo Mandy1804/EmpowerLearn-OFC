@@ -1,23 +1,59 @@
 import express from "express";
+import path from "path";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import cors from "cors";
+
 import { routes } from "./routes/index";
 import { errorHandler } from "./middlewares/error-handler.middleware";
 import { pageNotFoundHandler } from "./middlewares/page-not-found.middleware";
 import { setSocketServer } from "./config/socket";
-import cors from "cors";
 
 const app = express();
 
-app.use(cors({ origin: "*" }));
+app.set("trust proxy", 1);
+
+app.use(
+    cors({
+        origin: "*",
+        methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allowedHeaders: [
+            "Origin",
+            "X-Requested-With",
+            "Content-Type",
+            "Accept",
+            "Authorization",
+        ],
+    })
+);
+
+
+app.use(
+    "/uploads",
+    express.static(path.resolve(process.cwd(), "uploads"), {
+        setHeaders: (res) => {
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            res.setHeader(
+                "Access-Control-Allow-Methods",
+                "GET, OPTIONS"
+            );
+            res.setHeader(
+                "Access-Control-Allow-Headers",
+                "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+            );
+            res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+            res.setHeader("Cache-Control", "no-store");
+        },
+    })
+);
 
 const httpServer = createServer(app);
 
 export const io = new Server(httpServer, {
     cors: {
         origin: "*",
-        methods: ["GET", "POST"]
-    }
+        methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    },
 });
 
 setSocketServer(io);

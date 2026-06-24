@@ -3,7 +3,10 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String baseUrl = 'https://empowerlearn-ofc-production.up.railway.app';
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'https://empowerlearn-ofc-production.up.railway.app',
+  );
 
   static Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
@@ -33,7 +36,9 @@ class ApiService {
     throw Exception('Email ou senha inválidos');
   }
 
-  static Future<Map<String, dynamic>> register(Map<String, dynamic> dados) async {
+  static Future<Map<String, dynamic>> register(
+    Map<String, dynamic> dados,
+  ) async {
     final response = await http.post(
       Uri.parse('$baseUrl/auth/register'),
       headers: {'Content-Type': 'application/json'},
@@ -46,14 +51,20 @@ class ApiService {
 
   static Future<List<dynamic>> getCursos() async {
     final headers = await _headers();
-    final response = await http.get(Uri.parse('$baseUrl/cursos'), headers: headers);
+    final response = await http.get(
+      Uri.parse('$baseUrl/cursos'),
+      headers: headers,
+    );
     if (response.statusCode == 200) return jsonDecode(response.body);
     return [];
   }
 
   static Future<Map<String, dynamic>> getCursoById(int id) async {
     final headers = await _headers();
-    final response = await http.get(Uri.parse('$baseUrl/cursos/$id'), headers: headers);
+    final response = await http.get(
+      Uri.parse('$baseUrl/cursos/$id'),
+      headers: headers,
+    );
     if (response.statusCode == 200) return jsonDecode(response.body);
     throw Exception('Curso não encontrado');
   }
@@ -70,7 +81,11 @@ class ApiService {
 
   static Future<void> updateCurso(int id, Map<String, dynamic> dados) async {
     final headers = await _headers();
-    await http.put(Uri.parse('$baseUrl/cursos/$id'), headers: headers, body: jsonEncode(dados));
+    await http.put(
+      Uri.parse('$baseUrl/cursos/$id'),
+      headers: headers,
+      body: jsonEncode(dados),
+    );
   }
 
   static Future<void> deleteCurso(int id) async {
@@ -80,14 +95,20 @@ class ApiService {
 
   static Future<List<dynamic>> getMaterias(int cursoId) async {
     final headers = await _headers();
-    final response = await http.get(Uri.parse('$baseUrl/materias?cursoId=$cursoId'), headers: headers);
+    final response = await http.get(
+      Uri.parse('$baseUrl/materias?cursoId=$cursoId'),
+      headers: headers,
+    );
     if (response.statusCode == 200) return jsonDecode(response.body);
     return [];
   }
 
   static Future<Map<String, dynamic>> getMateriaById(int id) async {
     final headers = await _headers();
-    final response = await http.get(Uri.parse('$baseUrl/materias/$id'), headers: headers);
+    final response = await http.get(
+      Uri.parse('$baseUrl/materias/$id'),
+      headers: headers,
+    );
     if (response.statusCode == 200) return jsonDecode(response.body);
     throw Exception('Matéria não encontrada');
   }
@@ -104,7 +125,11 @@ class ApiService {
 
   static Future<void> updateMateria(int id, Map<String, dynamic> dados) async {
     final headers = await _headers();
-    await http.put(Uri.parse('$baseUrl/materias/$id'), headers: headers, body: jsonEncode(dados));
+    await http.put(
+      Uri.parse('$baseUrl/materias/$id'),
+      headers: headers,
+      body: jsonEncode(dados),
+    );
   }
 
   static Future<void> deleteMateria(int id) async {
@@ -114,7 +139,10 @@ class ApiService {
 
   static Future<List<dynamic>> getMinhasMatriculas() async {
     final headers = await _headers();
-    final response = await http.get(Uri.parse('$baseUrl/matriculas'), headers: headers);
+    final response = await http.get(
+      Uri.parse('$baseUrl/matriculas'),
+      headers: headers,
+    );
     if (response.statusCode == 200) return jsonDecode(response.body);
     return [];
   }
@@ -136,19 +164,30 @@ class ApiService {
 
   static Future<List<dynamic>> getTarefas(int materiaId) async {
     final headers = await _headers();
-    final response = await http.get(Uri.parse('$baseUrl/tarefas?materiaId=$materiaId'), headers: headers);
+    final response = await http.get(
+      Uri.parse('$baseUrl/tarefas?materiaId=$materiaId'),
+      headers: headers,
+    );
     if (response.statusCode == 200) return jsonDecode(response.body);
     return [];
   }
 
   static Future<void> createTarefa(Map<String, dynamic> dados) async {
     final headers = await _headers();
-    await http.post(Uri.parse('$baseUrl/tarefas'), headers: headers, body: jsonEncode(dados));
+    await http.post(
+      Uri.parse('$baseUrl/tarefas'),
+      headers: headers,
+      body: jsonEncode(dados),
+    );
   }
 
   static Future<void> updateTarefa(int id, Map<String, dynamic> dados) async {
     final headers = await _headers();
-    await http.put(Uri.parse('$baseUrl/tarefas/$id'), headers: headers, body: jsonEncode(dados));
+    await http.put(
+      Uri.parse('$baseUrl/tarefas/$id'),
+      headers: headers,
+      body: jsonEncode(dados),
+    );
   }
 
   static Future<void> deleteTarefa(int id) async {
@@ -158,7 +197,10 @@ class ApiService {
 
   static Future<List<dynamic>> getSubmissoes(int tarefaId) async {
     final headers = await _headers();
-    final response = await http.get(Uri.parse('$baseUrl/submissoes?tarefaId=$tarefaId'), headers: headers);
+    final response = await http.get(
+      Uri.parse('$baseUrl/submissoes?tarefaId=$tarefaId'),
+      headers: headers,
+    );
     if (response.statusCode == 200) return jsonDecode(response.body);
     return [];
   }
@@ -169,11 +211,19 @@ class ApiService {
     await http.post(
       Uri.parse('$baseUrl/submissoes'),
       headers: headers,
-      body: jsonEncode({'tarefaId': tarefaId, 'alunoId': userId, 'resposta': resposta}),
+      body: jsonEncode({
+        'tarefaId': tarefaId,
+        'alunoId': userId,
+        'resposta': resposta,
+      }),
     );
   }
 
-  static Future<void> corrigirSubmissao(int id, double nota, String feedback) async {
+  static Future<void> corrigirSubmissao(
+    int id,
+    double nota,
+    String feedback,
+  ) async {
     final headers = await _headers();
     await http.put(
       Uri.parse('$baseUrl/submissoes/$id'),
@@ -184,7 +234,9 @@ class ApiService {
 
   static Future<List<dynamic>> getForumPosts({int? cursoId}) async {
     final headers = await _headers();
-    final url = cursoId != null ? '$baseUrl/forum?cursoId=$cursoId' : '$baseUrl/forum';
+    final url = cursoId != null
+        ? '$baseUrl/forum?cursoId=$cursoId'
+        : '$baseUrl/forum';
     final response = await http.get(Uri.parse(url), headers: headers);
     if (response.statusCode == 200) return jsonDecode(response.body);
     return [];
@@ -212,7 +264,10 @@ class ApiService {
 
   static Future<List<dynamic>> getComentarios(int postId) async {
     final headers = await _headers();
-    final response = await http.get(Uri.parse('$baseUrl/comentarios?postId=$postId'), headers: headers);
+    final response = await http.get(
+      Uri.parse('$baseUrl/comentarios?postId=$postId'),
+      headers: headers,
+    );
     if (response.statusCode == 200) return jsonDecode(response.body);
     return [];
   }
@@ -223,7 +278,11 @@ class ApiService {
     await http.post(
       Uri.parse('$baseUrl/comentarios'),
       headers: headers,
-      body: jsonEncode({'postId': postId, 'autorId': userId, 'conteudo': conteudo}),
+      body: jsonEncode({
+        'postId': postId,
+        'autorId': userId,
+        'conteudo': conteudo,
+      }),
     );
   }
 
@@ -235,31 +294,48 @@ class ApiService {
   static Future<List<dynamic>> getNotificacoes() async {
     final headers = await _headers();
     final userId = await _getUserId();
-    final response = await http.get(Uri.parse('$baseUrl/notificacoes?usuarioId=$userId'), headers: headers);
+    final response = await http.get(
+      Uri.parse('$baseUrl/notificacoes?usuarioId=$userId'),
+      headers: headers,
+    );
     if (response.statusCode == 200) return jsonDecode(response.body);
     return [];
   }
 
   static Future<void> marcarNotificacaoLida(int id) async {
     final headers = await _headers();
-    await http.put(Uri.parse('$baseUrl/notificacoes/$id'), headers: headers, body: jsonEncode({'lida': true}));
+    await http.put(
+      Uri.parse('$baseUrl/notificacoes/$id'),
+      headers: headers,
+      body: jsonEncode({'lida': true}),
+    );
   }
 
   static Future<List<dynamic>> getVideos(int materiaId) async {
     final headers = await _headers();
-    final response = await http.get(Uri.parse('$baseUrl/videos?materiaId=$materiaId'), headers: headers);
+    final response = await http.get(
+      Uri.parse('$baseUrl/videos?materiaId=$materiaId'),
+      headers: headers,
+    );
     if (response.statusCode == 200) return jsonDecode(response.body);
     return [];
   }
 
   static Future<void> createVideo(Map<String, dynamic> dados) async {
     final headers = await _headers();
-    await http.post(Uri.parse('$baseUrl/videos'), headers: headers, body: jsonEncode(dados));
+    await http.post(
+      Uri.parse('$baseUrl/videos'),
+      headers: headers,
+      body: jsonEncode(dados),
+    );
   }
 
   static Future<List<dynamic>> getMeuProgresso() async {
     final headers = await _headers();
-    final response = await http.get(Uri.parse('$baseUrl/progresso-materias'), headers: headers);
+    final response = await http.get(
+      Uri.parse('$baseUrl/progresso-materias'),
+      headers: headers,
+    );
     if (response.statusCode == 200) return jsonDecode(response.body);
     return [];
   }
@@ -276,7 +352,10 @@ class ApiService {
 
   static Future<List<dynamic>> getMeusFavoritos() async {
     final headers = await _headers();
-    final response = await http.get(Uri.parse('$baseUrl/favoritos'), headers: headers);
+    final response = await http.get(
+      Uri.parse('$baseUrl/favoritos'),
+      headers: headers,
+    );
     if (response.statusCode == 200) return jsonDecode(response.body);
     return [];
   }
@@ -298,7 +377,10 @@ class ApiService {
 
   static Future<List<dynamic>> getMinhasNotas() async {
     final headers = await _headers();
-    final response = await http.get(Uri.parse('$baseUrl/notas-aluno'), headers: headers);
+    final response = await http.get(
+      Uri.parse('$baseUrl/notas-aluno'),
+      headers: headers,
+    );
     if (response.statusCode == 200) return jsonDecode(response.body);
     return [];
   }
@@ -315,16 +397,121 @@ class ApiService {
 
   static Future<List<dynamic>> getMeuHistorico() async {
     final headers = await _headers();
-    final response = await http.get(Uri.parse('$baseUrl/historico'), headers: headers);
+    final response = await http.get(
+      Uri.parse('$baseUrl/historico'),
+      headers: headers,
+    );
     if (response.statusCode == 200) return jsonDecode(response.body);
     return [];
   }
 
   static Future<Map<String, dynamic>> getMeuPerfil() async {
     final headers = await _headers();
-    final userId = await _getUserId();
-    final response = await http.get(Uri.parse('$baseUrl/usuarios/$userId'), headers: headers);
-    if (response.statusCode == 200) return jsonDecode(response.body);
+
+    final response = await http.get(
+      Uri.parse('${baseUrl}/users/me'),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+
+      if (decoded is Map<String, dynamic> &&
+          decoded['usuario'] is Map<String, dynamic>) {
+        return decoded['usuario'] as Map<String, dynamic>;
+      }
+
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+    }
+
     throw Exception('Erro ao carregar perfil');
+  }
+
+  static Future<Map<String, dynamic>> updateMeuPerfil({String? nome}) async {
+    final headers = await _headers();
+
+    final body = <String, dynamic>{};
+
+    if (nome != null && nome.trim().isNotEmpty) {
+      body['nome'] = nome.trim();
+    }
+
+    final response = await http.put(
+      Uri.parse('$baseUrl/users/me'),
+      headers: headers,
+      body: jsonEncode(body),
+    );
+
+    if (response.body.isNotEmpty) {
+      final decoded = jsonDecode(response.body);
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return decoded is Map<String, dynamic>
+            ? decoded
+            : <String, dynamic>{'data': decoded};
+      }
+
+      throw Exception(
+        decoded is Map<String, dynamic>
+            ? decoded['message'] ?? 'Erro ao atualizar perfil'
+            : 'Erro ao atualizar perfil',
+      );
+    }
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return <String, dynamic>{};
+    }
+
+    throw Exception('Erro ao atualizar perfil');
+  }
+
+  static Future<Map<String, dynamic>> uploadFotoPerfil({
+    required String fileName,
+    required List<int> bytes,
+  }) async {
+    final token = await _getToken();
+
+    if (token == null || token.isEmpty) {
+      throw Exception('Usuário não autenticado');
+    }
+
+    var nomeArquivo = fileName.trim();
+
+    if (nomeArquivo.isEmpty || !nomeArquivo.contains('.')) {
+      nomeArquivo = 'perfil.jpg';
+    }
+
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/users/me/foto'),
+    );
+
+    request.headers['Authorization'] = 'Bearer $token';
+
+    request.files.add(
+      http.MultipartFile.fromBytes('foto', bytes, filename: nomeArquivo),
+    );
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    final Map<String, dynamic> data;
+
+    if (response.body.isNotEmpty) {
+      final decoded = jsonDecode(response.body);
+      data = decoded is Map<String, dynamic>
+          ? decoded
+          : <String, dynamic>{'data': decoded};
+    } else {
+      data = <String, dynamic>{};
+    }
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(data['message'] ?? 'Erro ao atualizar foto');
+    }
+
+    return data;
   }
 }
