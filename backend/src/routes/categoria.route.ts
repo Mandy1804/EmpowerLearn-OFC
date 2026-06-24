@@ -5,8 +5,8 @@ import { permitir } from '../middlewares/permissao.middleware';
 
 export const categoriaRoutes = express.Router();
 
-categoriaRoutes.get('/categorias',permitir ('user', 'professor','admin'), asyncHandler(CategoriaController.getAll));
-categoriaRoutes.get('/categorias/:id',permitir ('user', 'professor','admin'), asyncHandler(CategoriaController.getById));
-categoriaRoutes.post('/categorias',permitir ('admin'), asyncHandler(CategoriaController.save));
-categoriaRoutes.put('/categorias/:id',permitir ('admin'), asyncHandler(CategoriaController.update));
-categoriaRoutes.delete('/categorias/:id',permitir ('admin'), asyncHandler(CategoriaController.delete));
+categoriaRoutes.get('/categorias', permitir('aluno', 'professor', 'admin'), asyncHandler(CategoriaController.getAll));
+categoriaRoutes.get('/categorias/:id', permitir('aluno', 'professor', 'admin'), asyncHandler(CategoriaController.getById));
+categoriaRoutes.post('/categorias', permitir('admin'), asyncHandler(CategoriaController.save));
+categoriaRoutes.put('/categorias/:id', permitir('admin'), asyncHandler(CategoriaController.update));
+categoriaRoutes.delete('/categorias/:id', permitir('admin'), asyncHandler(CategoriaController.delete));
