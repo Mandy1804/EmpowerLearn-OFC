@@ -10,6 +10,12 @@ datasource db {
   provider = "postgresql"
 }
 
+enum TipoUsuario {
+  aluno
+  professor
+  admin
+}
+
 model Instituicao {
   id        Int      @id @default(autoincrement())
   nome      String
@@ -26,7 +32,7 @@ model Usuario {
   nome          String
   email         String   @unique
   senhaHash     String   @map("senha_hash")
-  tipo          String
+  tipo          TipoUsuario
   ativo         Boolean  @default(true)
   fotoUrl       String?  @map("foto_url")
   instituicaoId Int?     @map("instituicao_id")
