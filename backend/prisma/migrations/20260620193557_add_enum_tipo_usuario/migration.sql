@@ -1,12 +1,33 @@
 /*
-  Warnings:
+  Migration para converter o campo usuarios.tipo de String para enum TipoUsuario.
 
-  - Changed the type of `tipo` on the `usuarios` table. No cast exists, the column would be dropped and recreated, which cannot be done if there is data, since the column is required.
+  A versão anterior removia a coluna tipo e criava novamente.
+  Isso poderia apagar dados ou falhar em bancos que já possuem usuários.
 
+  Esta versão mantém a coluna existente e apenas converte o tipo dela.
 */
--- CreateEnum
+
 CREATE TYPE "TipoUsuario" AS ENUM ('aluno', 'professor', 'admin');
 
--- AlterTable
-ALTER TABLE "usuarios" DROP COLUMN "tipo",
-ADD COLUMN     "tipo" "TipoUsuario" NOT NULL;
+UPDATE "usuarios"
+SET "tipo" = 'aluno'
+WHERE "tipo" IN ('user', 'usuario', 'usuarios');
+
+UPDATE "usuarios"
+SET "tipo" = 'professor'
+WHERE "tipo" IN ('professores');
+
+UPDATE "usuarios"
+SET "tipo" = 'admin'
+WHERE "tipo" IN ('adm', 'administrador');
+
+UPDATE "usuarios"
+SET "tipo" = 'aluno'
+WHERE "tipo" IS NULL;
+
+ALTER TABLE "usuarios"
+ALTER COLUMN "tipo" TYPE "TipoUsuario"
+USING ("tipo"::"TipoUsuario");
+
+ALTER TABLE "usuarios"
+ALTER COLUMN "tipo" SET NOT NULL;
