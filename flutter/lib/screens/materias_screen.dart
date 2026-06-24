@@ -3,14 +3,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/api_service.dart';
 import '../widgets/bottom_nav.dart';
+import '../widgets/create_task_sheet.dart';
 
 class MateriasScreen extends StatefulWidget {
   final Map<String, dynamic> curso;
 
-  const MateriasScreen({
-    super.key,
-    required this.curso,
-  });
+  const MateriasScreen({super.key, required this.curso});
 
   @override
   State<MateriasScreen> createState() => _MateriasScreenState();
@@ -225,11 +223,7 @@ class _MateriasScreenState extends State<MateriasScreen> {
                 linhas: 5,
               ),
               const SizedBox(height: 12),
-              _campo(
-                ordemCtrl,
-                'Ordem',
-                keyboardType: TextInputType.number,
-              ),
+              _campo(ordemCtrl, 'Ordem', keyboardType: TextInputType.number),
               const Spacer(),
               SizedBox(
                 width: double.infinity,
@@ -240,14 +234,13 @@ class _MateriasScreenState extends State<MateriasScreen> {
                       : () async {
                           final titulo = tituloCtrl.text.trim();
                           final conteudo = conteudoCtrl.text;
-                          final ordem = int.tryParse(ordemCtrl.text.trim()) ??
+                          final ordem =
+                              int.tryParse(ordemCtrl.text.trim()) ??
                               (_materias.length + 1);
 
                           final materiaId = materia?['id'] is int
                               ? materia!['id'] as int
-                              : int.tryParse(
-                                  materia?['id']?.toString() ?? '',
-                                );
+                              : int.tryParse(materia?['id']?.toString() ?? '');
 
                           if (titulo.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -295,6 +288,200 @@ class _MateriasScreenState extends State<MateriasScreen> {
     });
   }
 
+  void _abrirCriarTarefaMateria(Map<String, dynamic> materia) {
+    final tituloCtrl = TextEditingController();
+    final descricaoCtrl = TextEditingController();
+    DateTime? prazo;
+
+    final materiaId = materia['id'] is int
+        ? materia['id'] as int
+        : int.tryParse(materia['id']?.toString() ?? '') ?? 0;
+
+    final materiaTitulo = materia['titulo']?.toString() ?? 'Matéria';
+
+    if (materiaId <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Matéria inválida para criar tarefa.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setModalState) {
+            return Container(
+              height: MediaQuery.of(sheetContext).size.height * 0.72,
+              decoration: const BoxDecoration(
+                color: Color(0xFF081225),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+              ),
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 24,
+                bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 60,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Criar Tarefa',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Matéria: $materiaTitulo',
+                    style: const TextStyle(color: Colors.white60, fontSize: 14),
+                  ),
+                  const SizedBox(height: 20),
+                  _campo(tituloCtrl, 'Título da tarefa'),
+                  const SizedBox(height: 12),
+                  _campo(descricaoCtrl, 'Descrição', linhas: 3),
+                  const SizedBox(height: 12),
+                  GestureDetector(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: sheetContext,
+                        initialDate: DateTime.now().add(
+                          const Duration(days: 7),
+                        ),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                      );
+
+                      if (picked != null) {
+                        setModalState(() => prazo = picked);
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF111C3D),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.calendar_today,
+                            color: Colors.white54,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            prazo != null
+                                ? '${prazo!.day}/${prazo!.month}/${prazo!.year}'
+                                : 'Selecionar prazo',
+                            style: TextStyle(
+                              color: prazo != null
+                                  ? Colors.white
+                                  : Colors.white38,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 55,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final titulo = tituloCtrl.text.trim();
+
+                        if (titulo.isEmpty || prazo == null) {
+                          ScaffoldMessenger.of(sheetContext).showSnackBar(
+                            const SnackBar(
+                              content: Text('Informe o título e o prazo.'),
+                              backgroundColor: Colors.orange,
+                            ),
+                          );
+                          return;
+                        }
+
+                        final messenger = ScaffoldMessenger.of(context);
+
+                        Navigator.pop(sheetContext);
+
+                        try {
+                          await ApiService.createTarefa({
+                            'titulo': titulo,
+                            'descricao': descricaoCtrl.text.trim(),
+                            'materiaId': materiaId,
+                            'prazo': prazo!.toIso8601String(),
+                          });
+
+                          if (!mounted) return;
+
+                          messenger.hideCurrentSnackBar();
+                          messenger.showSnackBar(
+                            const SnackBar(
+                              content: Text('Tarefa criada!'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        } catch (e) {
+                          if (!mounted) return;
+
+                          messenger.hideCurrentSnackBar();
+                          messenger.showSnackBar(
+                            SnackBar(
+                              content: Text('Erro ao criar tarefa: $e'),
+                              backgroundColor: Colors.redAccent,
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF4A6CFF),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: const Text(
+                        'Criar Tarefa',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    ).whenComplete(() {
+      tituloCtrl.dispose();
+      descricaoCtrl.dispose();
+    });
+  }
+
   Future<void> _deletarMateria(int id) async {
     if (!_isAdmin) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -311,10 +498,7 @@ class _MateriasScreenState extends State<MateriasScreen> {
       builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: const Color(0xFF111C3D),
-          title: const Text(
-            'Confirmar',
-            style: TextStyle(color: Colors.white),
-          ),
+          title: const Text('Confirmar', style: TextStyle(color: Colors.white)),
           content: const Text(
             'Deseja deletar esta matéria?',
             style: TextStyle(color: Colors.white70),
@@ -329,10 +513,7 @@ class _MateriasScreenState extends State<MateriasScreen> {
             ),
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text(
-                'Deletar',
-                style: TextStyle(color: Colors.red),
-              ),
+              child: const Text('Deletar', style: TextStyle(color: Colors.red)),
             ),
           ],
         );
@@ -366,9 +547,7 @@ class _MateriasScreenState extends State<MateriasScreen> {
   }
 
   Widget _estadoCarregando() {
-    return const Center(
-      child: CircularProgressIndicator(),
-    );
+    return const Center(child: CircularProgressIndicator());
   }
 
   Widget _estadoErro() {
@@ -379,11 +558,7 @@ class _MateriasScreenState extends State<MateriasScreen> {
         padding: const EdgeInsets.all(24),
         children: [
           const SizedBox(height: 120),
-          const Icon(
-            Icons.error_outline,
-            color: Colors.redAccent,
-            size: 64,
-          ),
+          const Icon(Icons.error_outline, color: Colors.redAccent, size: 64),
           const SizedBox(height: 16),
           Center(
             child: Text(
@@ -412,11 +587,7 @@ class _MateriasScreenState extends State<MateriasScreen> {
         padding: const EdgeInsets.all(24),
         children: [
           const SizedBox(height: 120),
-          const Icon(
-            Icons.menu_book_outlined,
-            color: Colors.white30,
-            size: 72,
-          ),
+          const Icon(Icons.menu_book_outlined, color: Colors.white30, size: 72),
           const SizedBox(height: 16),
           const Center(
             child: Text(
@@ -463,7 +634,9 @@ class _MateriasScreenState extends State<MateriasScreen> {
         onTap: () {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Na próxima etapa, esta matéria abrirá as tarefas.'),
+              content: Text(
+                'Na próxima etapa, esta matéria abrirá as tarefas.',
+              ),
               backgroundColor: Color(0xFF4A6CFF),
             ),
           );
@@ -480,10 +653,7 @@ class _MateriasScreenState extends State<MateriasScreen> {
                     height: 42,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [
-                          Color(0xFF4A6CFF),
-                          Color(0xFF7B3FFF),
-                        ],
+                        colors: [Color(0xFF4A6CFF), Color(0xFF7B3FFF)],
                       ),
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -513,11 +683,19 @@ class _MateriasScreenState extends State<MateriasScreen> {
                   if (_isProfessorOuAdmin)
                     PopupMenuButton<String>(
                       color: const Color(0xFF111C3D),
-                      icon: const Icon(
-                        Icons.more_vert,
-                        color: Colors.white70,
-                      ),
+                      icon: const Icon(Icons.more_vert, color: Colors.white70),
                       onSelected: (value) {
+                        if (value == 'tarefa') {
+                          final materiaId = id;
+                          final materiaTitulo = materia['titulo']?.toString() ?? 'Matéria';
+
+                          showCreateTaskSheet(
+                            context: context,
+                            materiaId: materiaId,
+                            materiaTitulo: materiaTitulo,
+                          );
+                        }
+
                         if (value == 'editar') {
                           _abrirFormularioMateria(materia: materia);
                         }
@@ -572,11 +750,8 @@ class _MateriasScreenState extends State<MateriasScreen> {
                   SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      'Toque para ver tarefas em etapa futura',
-                      style: TextStyle(
-                        color: Colors.white38,
-                        fontSize: 12,
-                      ),
+                      'Use o menu ⋮ para criar tarefa nesta matéria',
+                      style: TextStyle(color: Colors.white38, fontSize: 12),
                     ),
                   ),
                 ],

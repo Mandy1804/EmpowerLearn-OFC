@@ -173,12 +173,15 @@ class ApiService {
   }
 
   static Future<void> createTarefa(Map<String, dynamic> dados) async {
-    final headers = await _headers();
-    await http.post(
+    final response = await http.post(
       Uri.parse('$baseUrl/tarefas'),
-      headers: headers,
+      headers: await _headers(),
       body: jsonEncode(dados),
     );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('HTTP ${response.statusCode}: ${response.body}');
+    }
   }
 
   static Future<void> updateTarefa(int id, Map<String, dynamic> dados) async {
