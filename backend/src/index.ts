@@ -4,11 +4,13 @@ import { Server } from "socket.io";
 import { routes } from "./routes/index";
 import { errorHandler } from "./middlewares/error-handler.middleware";
 import { pageNotFoundHandler } from "./middlewares/page-not-found.middleware";
+import { setSocketServer } from "./config/socket";
 import cors from "cors";
 
-
 const app = express();
+
 app.use(cors({ origin: "*" }));
+
 const httpServer = createServer(app);
 
 export const io = new Server(httpServer, {
@@ -17,6 +19,8 @@ export const io = new Server(httpServer, {
         methods: ["GET", "POST"]
     }
 });
+
+setSocketServer(io);
 
 io.on("connection", (socket) => {
     console.log(`Cliente conectado: ${socket.id}`);
@@ -31,12 +35,16 @@ io.on("connection", (socket) => {
     });
 });
 
-
 routes(app);
 pageNotFoundHandler(app);
 errorHandler(app);
 
 const PORT = process.env.PORT || 3000;
-httpServer.listen(PORT, () => {
-    console.log(`Servidor rodando em http://localhost:${PORT}`);
-});
+
+if (process.env.NODE_ENV !== "test") {
+    httpServer.listen(PORT, () => {
+        console.log(`Servidor rodando em http://localhost:${PORT}`);
+    });
+}
+
+export { app, httpServer };

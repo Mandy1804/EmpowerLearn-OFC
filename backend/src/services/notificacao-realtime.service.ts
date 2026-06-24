@@ -1,5 +1,5 @@
-import { io } from '../index';
 import prisma from '../config/prisma';
+import { emitToUser } from '../config/socket';
 
 export class NotificacaoRealtimeService {
 
@@ -14,7 +14,7 @@ export class NotificacaoRealtimeService {
             }
         });
 
-        io.to(`usuario_${usuarioId}`).emit('notificacao', {
+        emitToUser(usuarioId, 'notificacao', {
             titulo,
             mensagem,
             tipo,
