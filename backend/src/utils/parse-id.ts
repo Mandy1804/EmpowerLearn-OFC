@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request } from 'express';
 import { ValidationError } from '../errors/validation.error';
 
 export function parseId(req: Request): number {

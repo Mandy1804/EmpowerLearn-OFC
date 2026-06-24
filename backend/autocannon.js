@@ -2,8 +2,8 @@ const autocannon = require('autocannon');
 
 const instance = autocannon({
     url: 'http://localhost:3000',
-    connections: 100,
-    duration: 10,
+    connections: 1000,
+    duration: 60,
     requests: [
         {
             method: 'POST',
