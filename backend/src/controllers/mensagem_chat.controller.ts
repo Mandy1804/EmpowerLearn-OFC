@@ -1,3 +1,4 @@
+import { parseId } from '../utils/parse-id';
 import { Request, Response, NextFunction } from 'express';
 import { MensagemService } from '../services/mensagem.service';
 
@@ -6,7 +7,7 @@ export class MensagemChatController {
         res.send(await new MensagemService().getAll());
     }
     static async getById(req: Request, res: Response, next: NextFunction) {
-        const id = Number(req.params['id']);
+        const id = parseId(req);
         res.send(await new MensagemService().getById(id));
     }
     static async save(req: Request, res: Response, next: NextFunction) {
@@ -14,12 +15,12 @@ export class MensagemChatController {
         res.status(201).send({ message: 'Mensagem enviada com sucesso' });
     }
     static async update(req: Request, res: Response, next: NextFunction) {
-        const id = Number(req.params['id']);
+        const id = parseId(req);
         await new MensagemService().update(id, req.body);
         res.send({ message: 'Mensagem atualizada com sucesso' });
     }
     static async delete(req: Request, res: Response, next: NextFunction) {
-        const id = Number(req.params['id']);
+        const id = parseId(req);
         await new MensagemService().delete(id);
         res.status(204).end();
     }

@@ -1,3 +1,4 @@
+import { parseId } from '../utils/parse-id';
 import { Request, Response, NextFunction } from 'express';
 import { CursoService } from '../services/curso.service';
 
@@ -6,7 +7,7 @@ export class CursoController {
         res.send(await new CursoService().getAll());
     }
     static async getById(req: Request, res: Response, next: NextFunction) {
-        const id = Number(req.params['id']);
+        const id = parseId(req);
         res.send(await new CursoService().getById(id));
     }
     static async save(req: Request, res: Response, next: NextFunction) {
@@ -14,12 +15,12 @@ export class CursoController {
         res.status(201).send({ message: 'Curso criado com sucesso' });
     }
     static async update(req: Request, res: Response, next: NextFunction) {
-        const id = Number(req.params['id']);
+        const id = parseId(req);
         await new CursoService().update(id, req.body);
         res.send({ message: 'Curso atualizado com sucesso' });
     }
     static async delete(req: Request, res: Response, next: NextFunction) {
-        const id = Number(req.params['id']);
+        const id = parseId(req);
         await new CursoService().delete(id);
         res.status(204).end();
     }
