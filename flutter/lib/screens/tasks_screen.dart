@@ -13,6 +13,7 @@ class TasksScreen extends StatefulWidget {
 
 class _TasksScreenState extends State<TasksScreen> {
   int _selectedFilter = 0;
+  int _userId = 0;
   String _userTipo = 'aluno';
   bool _carregando = true;
   String? _erro;
@@ -49,6 +50,14 @@ class _TasksScreenState extends State<TasksScreen> {
     return ['Todas', 'A Fazer', 'Enviadas'];
   }
 
+  List<dynamic> get _tarefasPendentes {
+    return _tarefas.where((tarefa) => !_foiEnviada(tarefa)).toList();
+  }
+
+  List<dynamic> get _tarefasEnviadas {
+    return _tarefas.where((tarefa) => _foiEnviada(tarefa)).toList();
+  }
+
   List<dynamic> get _tarefasFiltradas {
     if (_selectedFilter == 0) {
       return _tarefas;
@@ -60,10 +69,15 @@ class _TasksScreenState extends State<TasksScreen> {
       return _tarefas;
     }
 
-    return _tarefas.where((tarefa) {
-      final status = _statusTarefa(tarefa);
-      return status == filtro;
-    }).toList();
+    if (!_isProfessor && filtro == 'A Fazer') {
+      return _tarefasPendentes;
+    }
+
+    if (!_isProfessor && filtro == 'Enviadas') {
+      return _tarefasEnviadas;
+    }
+
+    return _tarefas;
   }
 
   Future<void> _carregar() async {
@@ -77,6 +91,7 @@ class _TasksScreenState extends State<TasksScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final tipo = prefs.getString('userTipo') ?? 'aluno';
+      final userId = int.tryParse(prefs.getString('userId') ?? '0') ?? 0;
 
       final tarefas = await ApiService.getTarefas(0);
 
@@ -84,6 +99,7 @@ class _TasksScreenState extends State<TasksScreen> {
 
       setState(() {
         _userTipo = tipo.toLowerCase();
+        _userId = userId;
         _tarefas = tarefas;
         _selectedFilter = 0;
         _carregando = false;
@@ -112,18 +128,25 @@ class _TasksScreenState extends State<TasksScreen> {
     return int.tryParse(valor?.toString() ?? '') ?? 0;
   }
 
-  String _statusTarefa(dynamic tarefa) {
-    final status = tarefa['status']?.toString();
+  bool _foiEnviada(dynamic tarefa) {
+    final submissoes = tarefa['submissoes'];
 
-    if (status != null && status.trim().isNotEmpty) {
-      return status;
+    if (submissoes is! List) {
+      return false;
     }
 
+    return submissoes.any((item) {
+      final submissao = _asMap(item);
+      return _parseId(submissao?['alunoId']) == _userId;
+    });
+  }
+
+  String _statusTarefa(dynamic tarefa) {
     if (_isProfessor) {
       return 'Criadas';
     }
 
-    return 'A Fazer';
+    return _foiEnviada(tarefa) ? 'Enviada' : 'A Fazer';
   }
 
   String _formatarPrazo(dynamic valor) {
@@ -184,9 +207,9 @@ class _TasksScreenState extends State<TasksScreen> {
       return nomeCursoDireto.trim();
     }
 
-    final nomeCursoDireto2 = cursoDireto?['titulo']?.toString();
-    if (nomeCursoDireto2 != null && nomeCursoDireto2.trim().isNotEmpty) {
-      return nomeCursoDireto2.trim();
+    final tituloCursoDireto = cursoDireto?['titulo']?.toString();
+    if (tituloCursoDireto != null && tituloCursoDireto.trim().isNotEmpty) {
+      return tituloCursoDireto.trim();
     }
 
     final nomeCursoMateria = cursoDaMateria?['nome']?.toString();
@@ -194,9 +217,9 @@ class _TasksScreenState extends State<TasksScreen> {
       return nomeCursoMateria.trim();
     }
 
-    final nomeCursoMateria2 = cursoDaMateria?['titulo']?.toString();
-    if (nomeCursoMateria2 != null && nomeCursoMateria2.trim().isNotEmpty) {
-      return nomeCursoMateria2.trim();
+    final tituloCursoMateria = cursoDaMateria?['titulo']?.toString();
+    if (tituloCursoMateria != null && tituloCursoMateria.trim().isNotEmpty) {
+      return tituloCursoMateria.trim();
     }
 
     return 'Curso não informado';
@@ -204,11 +227,13 @@ class _TasksScreenState extends State<TasksScreen> {
 
   String _chaveMateria(dynamic tarefa) {
     final idMateria = _parseId(tarefa['materiaId']);
+
     if (idMateria > 0) {
       return 'materia_$idMateria';
     }
 
     final nome = _nomeMateria(tarefa).trim().toLowerCase();
+
     if (nome.isNotEmpty) {
       return nome;
     }
@@ -494,6 +519,7 @@ class _TasksScreenState extends State<TasksScreen> {
     final nomeMateria = _nomeMateria(tarefa);
     final nomeCurso = _nomeCurso(tarefa);
     final prazo = _formatarPrazo(tarefa['prazo']);
+    final enviada = _foiEnviada(tarefa);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -583,18 +609,20 @@ class _TasksScreenState extends State<TasksScreen> {
                 width: double.infinity,
                 height: 42,
                 child: ElevatedButton(
-                  onPressed: () => _abrirSubmeter(tarefa),
+                  onPressed: enviada ? null : () => _abrirSubmeter(tarefa),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: cor.withOpacity(0.22),
-                    foregroundColor: cor,
+                    backgroundColor: enviada
+                        ? Colors.white12
+                        : cor.withOpacity(0.22),
+                    foregroundColor: enviada ? Colors.white38 : cor,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(13),
                     ),
                   ),
-                  child: const Text(
-                    'Responder',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  child: Text(
+                    enviada ? 'Enviada' : 'Responder',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -633,6 +661,11 @@ class _TasksScreenState extends State<TasksScreen> {
       return _estadoErro();
     }
 
+    final segundoCardTitulo = _isProfessor ? 'Criadas' : 'Pendentes';
+    final segundoCardValor = _isProfessor
+        ? _tarefas.length.toString()
+        : _tarefasPendentes.length.toString();
+
     return Column(
       children: [
         Row(
@@ -661,8 +694,8 @@ class _TasksScreenState extends State<TasksScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: _statCard(
-                _isProfessor ? 'Criadas' : 'Pendentes',
-                _tarefasFiltradas.length.toString(),
+                segundoCardTitulo,
+                segundoCardValor,
                 valueColor: const Color(0xFFFFB020),
               ),
             ),

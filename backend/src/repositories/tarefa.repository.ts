@@ -8,6 +8,7 @@ export class TarefaRepository {
         curso: true,
       },
     },
+    submissoes: true,
   };
 
   async getAll(materiaId?: number) {
