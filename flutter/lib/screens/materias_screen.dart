@@ -5,6 +5,14 @@ import '../services/api_service.dart';
 import '../widgets/bottom_nav.dart';
 import '../widgets/create_task_sheet.dart';
 
+typedef SalvarMateriaCallback =
+    Future<bool> Function({
+      int? id,
+      required String titulo,
+      required String conteudo,
+      required int ordem,
+    });
+
 class MateriasScreen extends StatefulWidget {
   final Map<String, dynamic> curso;
 
@@ -61,11 +69,11 @@ class _MateriasScreenState extends State<MateriasScreen> {
       if (!mounted) return;
 
       setState(() {
-        _userTipo = tipo;
+        _userTipo = tipo.toLowerCase();
         _materias = materias;
         _carregando = false;
       });
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
 
       setState(() {
@@ -76,39 +84,15 @@ class _MateriasScreenState extends State<MateriasScreen> {
     }
   }
 
-  Widget _campo(
-    TextEditingController controller,
-    String hint, {
-    int linhas = 1,
-    TextInputType? keyboardType,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF111C3D),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: TextField(
-        controller: controller,
-        maxLines: linhas,
-        keyboardType: keyboardType,
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: const TextStyle(color: Colors.white38),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.all(16),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _salvarMateria({
+  Future<bool> _salvarMateria({
     int? id,
     required String titulo,
     required String conteudo,
     required int ordem,
   }) async {
-    if (titulo.trim().isEmpty) return;
+    if (titulo.trim().isEmpty) {
+      return false;
+    }
 
     if (mounted) {
       setState(() {
@@ -136,16 +120,9 @@ class _MateriasScreenState extends State<MateriasScreen> {
 
       await _carregarMaterias();
 
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(id == null ? 'Matéria criada!' : 'Matéria atualizada!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      return true;
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) return false;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -153,6 +130,8 @@ class _MateriasScreenState extends State<MateriasScreen> {
           backgroundColor: Colors.red,
         ),
       );
+
+      return false;
     } finally {
       if (mounted) {
         setState(() {
@@ -163,128 +142,39 @@ class _MateriasScreenState extends State<MateriasScreen> {
   }
 
   void _abrirFormularioMateria({Map<String, dynamic>? materia}) {
-    final tituloCtrl = TextEditingController(
-      text: materia?['titulo']?.toString() ?? '',
-    );
+    final isEdicao = materia != null;
 
-    final conteudoCtrl = TextEditingController(
-      text: materia?['conteudo']?.toString() ?? '',
-    );
+    final materiaId = materia?['id'] is int
+        ? materia!['id'] as int
+        : int.tryParse(materia?['id']?.toString() ?? '');
 
-    final ordemCtrl = TextEditingController(
-      text: materia?['ordem']?.toString() ?? '${_materias.length + 1}',
-    );
-
-    showModalBottomSheet(
+    showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return Container(
-          height: MediaQuery.of(sheetContext).size.height * 0.72,
-          decoration: const BoxDecoration(
-            color: Color(0xFF081225),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-          ),
-          padding: EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 24,
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 24,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 60,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                materia == null ? 'Criar Matéria' : 'Editar Matéria',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 20),
-              _campo(tituloCtrl, 'Título da matéria'),
-              const SizedBox(height: 12),
-              _campo(
-                conteudoCtrl,
-                'Conteúdo / descrição da matéria',
-                linhas: 5,
-              ),
-              const SizedBox(height: 12),
-              _campo(ordemCtrl, 'Ordem', keyboardType: TextInputType.number),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: ElevatedButton(
-                  onPressed: _salvando
-                      ? null
-                      : () async {
-                          final titulo = tituloCtrl.text.trim();
-                          final conteudo = conteudoCtrl.text;
-                          final ordem =
-                              int.tryParse(ordemCtrl.text.trim()) ??
-                              (_materias.length + 1);
-
-                          final materiaId = materia?['id'] is int
-                              ? materia!['id'] as int
-                              : int.tryParse(materia?['id']?.toString() ?? '');
-
-                          if (titulo.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Informe o título da matéria.'),
-                                backgroundColor: Colors.orange,
-                              ),
-                            );
-                            return;
-                          }
-
-                          Navigator.pop(sheetContext);
-
-                          await _salvarMateria(
-                            id: materiaId,
-                            titulo: titulo,
-                            conteudo: conteudo,
-                            ordem: ordem,
-                          );
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4A6CFF),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: Text(
-                    materia == null ? 'Criar Matéria' : 'Salvar Alterações',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+      builder: (_) {
+        return _MateriaFormSheet(
+          materiaId: materiaId,
+          tituloInicial: materia?['titulo']?.toString() ?? '',
+          conteudoInicial: materia?['conteudo']?.toString() ?? '',
+          ordemInicial:
+              materia?['ordem']?.toString() ?? '${_materias.length + 1}',
+          isEdicao: isEdicao,
+          onSalvar: _salvarMateria,
         );
       },
-    ).whenComplete(() {
-      tituloCtrl.dispose();
-      conteudoCtrl.dispose();
-      ordemCtrl.dispose();
+    ).then((salvou) {
+      if (salvou != true || !mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isEdicao ? 'Matéria atualizada!' : 'Matéria criada!'),
+          backgroundColor: Colors.green,
+        ),
+      );
     });
   }
 
@@ -405,7 +295,7 @@ class _MateriasScreenState extends State<MateriasScreen> {
           if (_isProfessorOuAdmin) ...[
             const SizedBox(height: 20),
             ElevatedButton.icon(
-              onPressed: () => _abrirFormularioMateria(),
+              onPressed: _salvando ? null : () => _abrirFormularioMateria(),
               icon: const Icon(Icons.add),
               label: const Text('Criar primeira matéria'),
               style: ElevatedButton.styleFrom(
@@ -565,7 +455,13 @@ class _MateriasScreenState extends State<MateriasScreen> {
         padding: const EdgeInsets.all(16),
         itemCount: _materias.length,
         itemBuilder: (_, index) {
-          final materia = Map<String, dynamic>.from(_materias[index] as Map);
+          final item = _materias[index];
+
+          if (item is! Map) {
+            return const SizedBox.shrink();
+          }
+
+          final materia = Map<String, dynamic>.from(item);
           return _cardMateria(materia);
         },
       ),
@@ -609,13 +505,241 @@ class _MateriasScreenState extends State<MateriasScreen> {
         actions: [
           if (_isProfessorOuAdmin)
             IconButton(
-              onPressed: () => _abrirFormularioMateria(),
+              onPressed: _salvando ? null : () => _abrirFormularioMateria(),
               icon: const Icon(Icons.add, color: Colors.white),
               tooltip: 'Criar Matéria',
             ),
         ],
       ),
       body: _body(),
+    );
+  }
+}
+
+class _MateriaFormSheet extends StatefulWidget {
+  final int? materiaId;
+  final String tituloInicial;
+  final String conteudoInicial;
+  final String ordemInicial;
+  final bool isEdicao;
+  final SalvarMateriaCallback onSalvar;
+
+  const _MateriaFormSheet({
+    required this.materiaId,
+    required this.tituloInicial,
+    required this.conteudoInicial,
+    required this.ordemInicial,
+    required this.isEdicao,
+    required this.onSalvar,
+  });
+
+  @override
+  State<_MateriaFormSheet> createState() => _MateriaFormSheetState();
+}
+
+class _MateriaFormSheetState extends State<_MateriaFormSheet> {
+  late final TextEditingController _tituloCtrl;
+  late final TextEditingController _conteudoCtrl;
+  late final TextEditingController _ordemCtrl;
+
+  bool _salvando = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _tituloCtrl = TextEditingController(text: widget.tituloInicial);
+    _conteudoCtrl = TextEditingController(text: widget.conteudoInicial);
+    _ordemCtrl = TextEditingController(text: widget.ordemInicial);
+  }
+
+  @override
+  void dispose() {
+    _tituloCtrl.dispose();
+    _conteudoCtrl.dispose();
+    _ordemCtrl.dispose();
+    super.dispose();
+  }
+
+  void _mostrarMensagem(String mensagem, Color cor) {
+    if (!mounted) return;
+
+    final messenger = ScaffoldMessenger.maybeOf(context);
+
+    if (messenger == null) return;
+
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(content: Text(mensagem), backgroundColor: cor),
+    );
+  }
+
+  Future<void> _salvar() async {
+    if (_salvando) return;
+
+    final titulo = _tituloCtrl.text.trim();
+    final conteudo = _conteudoCtrl.text.trim();
+    final ordem = int.tryParse(_ordemCtrl.text.trim()) ?? 1;
+
+    if (titulo.isEmpty) {
+      _mostrarMensagem('Informe o título da matéria.', Colors.orange);
+      return;
+    }
+
+    setState(() {
+      _salvando = true;
+    });
+
+    final ok = await widget.onSalvar(
+      id: widget.materiaId,
+      titulo: titulo,
+      conteudo: conteudo,
+      ordem: ordem,
+    );
+
+    if (!mounted) return;
+
+    if (ok) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+
+    setState(() {
+      _salvando = false;
+    });
+  }
+
+  Widget _campo(
+    TextEditingController controller,
+    String hint, {
+    int linhas = 1,
+    TextInputType? keyboardType,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF111C3D),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: TextField(
+        controller: controller,
+        maxLines: linhas,
+        enabled: !_salvando,
+        keyboardType: keyboardType,
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: const TextStyle(color: Colors.white38),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.all(16),
+        ),
+      ),
+    );
+  }
+
+  Widget _botaoSalvar() {
+    return SizedBox(
+      width: double.infinity,
+      height: 55,
+      child: ElevatedButton(
+        onPressed: _salvando ? null : _salvar,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF4A6CFF),
+          disabledBackgroundColor: const Color(0xFF26345F),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+        child: _salvando
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : Text(
+                widget.isEdicao ? 'Salvar Alterações' : 'Criar Matéria',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final altura = MediaQuery.of(context).size.height * 0.72;
+    final teclado = MediaQuery.of(context).viewInsets.bottom;
+
+    return SafeArea(
+      top: false,
+      child: Container(
+        height: altura,
+        decoration: const BoxDecoration(
+          color: Color(0xFF081225),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+        ),
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: teclado + 24,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 60,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              widget.isEdicao ? 'Editar Matéria' : 'Criar Matéria',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: SingleChildScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                child: Column(
+                  children: [
+                    _campo(_tituloCtrl, 'Título da matéria'),
+                    const SizedBox(height: 12),
+                    _campo(
+                      _conteudoCtrl,
+                      'Conteúdo / descrição da matéria',
+                      linhas: 5,
+                    ),
+                    const SizedBox(height: 12),
+                    _campo(
+                      _ordemCtrl,
+                      'Ordem',
+                      keyboardType: TextInputType.number,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            _botaoSalvar(),
+          ],
+        ),
+      ),
     );
   }
 }
