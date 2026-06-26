@@ -2,10 +2,35 @@ import prisma from "../config/prisma";
 import { NotFoundError } from "../errors/not-found.error";
 
 export class ForumRepository {
+  private formatarPost(post: any) {
+    return {
+      id: post.id,
+      cursoId: post.cursoId,
+      autorId: post.autorId,
+      titulo: post.titulo,
+      conteudo: post.conteudo,
+      createdAt: post.createdAt,
+      autorNome: post.autor?.nome ?? "Usuário",
+      autorEmail: post.autor?.email ?? "",
+      autorFoto: post.autor?.fotoUrl ?? null,
+      autorTipo: post.autor?.tipo ?? "",
+      cursoTitulo: post.curso?.titulo ?? post.curso?.nome ?? "",
+      comentarios: post.comentarios ?? [],
+    };
+  }
+
   async getAll() {
-    return await prisma.postForum.findMany({
+    const posts = await prisma.postForum.findMany({
       include: {
-        autor: true,
+        autor: {
+          select: {
+            id: true,
+            nome: true,
+            email: true,
+            fotoUrl: true,
+            tipo: true,
+          },
+        },
         curso: true,
         comentarios: true,
       },
@@ -13,13 +38,23 @@ export class ForumRepository {
         createdAt: "desc",
       },
     });
+
+    return posts.map((post) => this.formatarPost(post));
   }
 
   async getById(id: number) {
     const item = await prisma.postForum.findUnique({
       where: { id },
       include: {
-        autor: true,
+        autor: {
+          select: {
+            id: true,
+            nome: true,
+            email: true,
+            fotoUrl: true,
+            tipo: true,
+          },
+        },
         curso: true,
         comentarios: true,
       },
@@ -27,7 +62,7 @@ export class ForumRepository {
 
     if (!item) throw new NotFoundError("Post do fórum não encontrado");
 
-    return item;
+    return this.formatarPost(item);
   }
 
   async save(data: any) {
@@ -59,12 +94,9 @@ export class ForumRepository {
       cursoId = primeiroCurso.id;
     }
 
-    const tituloInformado = String(data?.titulo ?? "").trim();
-    const titulo =
-      tituloInformado ||
-      (conteudo.length > 50 ? conteudo.substring(0, 50) : conteudo);
+    const titulo = conteudo.length > 50 ? conteudo.substring(0, 50) : conteudo;
 
-    return await prisma.postForum.create({
+    const postCriado = await prisma.postForum.create({
       data: {
         titulo,
         conteudo,
@@ -72,11 +104,21 @@ export class ForumRepository {
         cursoId,
       },
       include: {
-        autor: true,
+        autor: {
+          select: {
+            id: true,
+            nome: true,
+            email: true,
+            fotoUrl: true,
+            tipo: true,
+          },
+        },
         curso: true,
         comentarios: true,
       },
     });
+
+    return this.formatarPost(postCriado);
   }
 
   async update(id: number, data: any) {
@@ -86,10 +128,25 @@ export class ForumRepository {
     if (data?.conteudo !== undefined) payload.conteudo = String(data.conteudo);
     if (data?.cursoId !== undefined) payload.cursoId = Number(data.cursoId);
 
-    return await prisma.postForum.update({
+    const postAtualizado = await prisma.postForum.update({
       where: { id },
       data: payload,
+      include: {
+        autor: {
+          select: {
+            id: true,
+            nome: true,
+            email: true,
+            fotoUrl: true,
+            tipo: true,
+          },
+        },
+        curso: true,
+        comentarios: true,
+      },
     });
+
+    return this.formatarPost(postAtualizado);
   }
 
   async delete(id: number) {

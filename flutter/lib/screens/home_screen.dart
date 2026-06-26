@@ -1105,7 +1105,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final metrics = [
       _DashboardMetric(
         icon: Icons.menu_book,
-        value: _cursosProfessor.length.toString(),
+        value: _cursos.length.toString(),
         label: 'Cursos',
         color: AppColors.blue,
       ),

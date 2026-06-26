@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/api_service.dart';
 import '../theme/app_colors.dart';
@@ -15,23 +14,11 @@ class ForumScreen extends StatefulWidget {
 class _ForumScreenState extends State<ForumScreen> {
   List<dynamic> _posts = [];
   bool _carregando = true;
-  String _nomeUsuario = 'Usuário';
 
   @override
   void initState() {
     super.initState();
     _carregarPosts();
-    _carregarNome();
-  }
-
-  Future<void> _carregarNome() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    if (!mounted) return;
-
-    setState(() {
-      _nomeUsuario = prefs.getString('userNome') ?? 'Usuário';
-    });
   }
 
   Future<void> _carregarPosts() async {
@@ -90,14 +77,131 @@ class _ForumScreenState extends State<ForumScreen> {
     });
   }
 
-  String _inicialUsuario() {
-    final nome = _nomeUsuario.trim();
+  Map<String, dynamic>? _autorDoPost(dynamic post) {
+    if (post is! Map) return null;
 
-    if (nome.isEmpty) {
-      return 'U';
+    final autor = post['autor'] ?? post['usuario'] ?? post['user'];
+
+    if (autor is Map<String, dynamic>) return autor;
+    if (autor is Map) return Map<String, dynamic>.from(autor);
+
+    return null;
+  }
+
+  String _nomeAutor(dynamic post) {
+    if (post is Map) {
+      final nomeDireto =
+          post['autorNome'] ?? post['usuarioNome'] ?? post['nomeAutor'];
+
+      final textoDireto = nomeDireto?.toString().trim() ?? '';
+
+      if (textoDireto.isNotEmpty && textoDireto != 'null') {
+        return textoDireto;
+      }
     }
 
+    final autor = _autorDoPost(post);
+
+    final nome =
+        autor?['nome'] ??
+        autor?['name'] ??
+        autor?['nomeCompleto'] ??
+        autor?['email'];
+
+    final texto = nome?.toString().trim() ?? '';
+
+    if (texto.isEmpty || texto == 'null') {
+      return 'Usuário';
+    }
+
+    return texto;
+  }
+
+  String _tipoAutor(dynamic post) {
+    if (post is Map) {
+      final tipoDireto = post['autorTipo'] ?? post['usuarioTipo'];
+      final textoDireto = tipoDireto?.toString().trim() ?? '';
+
+      if (textoDireto.isNotEmpty && textoDireto != 'null') {
+        return textoDireto;
+      }
+    }
+
+    final autor = _autorDoPost(post);
+    final tipo = autor?['tipo']?.toString().trim() ?? '';
+
+    return tipo;
+  }
+
+  String _inicialAutor(dynamic post) {
+    final nome = _nomeAutor(post).trim();
+
+    if (nome.isEmpty) return 'U';
+
     return nome[0].toUpperCase();
+  }
+
+  String? _fotoAutor(dynamic post) {
+    if (post is Map) {
+      final fotoDireta =
+          post['autorFoto'] ?? post['usuarioFoto'] ?? post['fotoAutor'];
+
+      final textoDireto = fotoDireta?.toString().trim() ?? '';
+
+      if (textoDireto.startsWith('http://') ||
+          textoDireto.startsWith('https://') ||
+          textoDireto.startsWith('data:image')) {
+        return textoDireto;
+      }
+    }
+
+    final autor = _autorDoPost(post);
+
+    final foto =
+        autor?['fotoUrl'] ??
+        autor?['foto'] ??
+        autor?['fotoPerfil'] ??
+        autor?['avatar'] ??
+        autor?['avatarUrl'] ??
+        autor?['imagem'] ??
+        autor?['imagemPerfil'] ??
+        autor?['profileImage'] ??
+        autor?['profileImageUrl'];
+
+    final texto = foto?.toString().trim() ?? '';
+
+    if (texto.startsWith('http://') ||
+        texto.startsWith('https://') ||
+        texto.startsWith('data:image')) {
+      return texto;
+    }
+
+    return null;
+  }
+
+  Widget _avatarAutor(dynamic post) {
+    final foto = _fotoAutor(post);
+
+    if (foto != null) {
+      return CircleAvatar(
+        radius: 24,
+        backgroundColor: AppColors.blue,
+        backgroundImage: NetworkImage(foto),
+        onBackgroundImageError: (_, __) {},
+      );
+    }
+
+    return CircleAvatar(
+      radius: 24,
+      backgroundColor: AppColors.blue,
+      child: Text(
+        _inicialAutor(post),
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
   }
 
   Widget _estadoVazio() {
@@ -118,8 +222,9 @@ class _ForumScreenState extends State<ForumScreen> {
         itemBuilder: (_, index) {
           final post = _posts[index];
 
-          final titulo = post['titulo']?.toString() ?? 'Discussão';
-          final conteudo = post['conteudo']?.toString() ?? '';
+          final conteudo = post['conteudo']?.toString().trim() ?? '';
+          final nomeAutor = _nomeAutor(post);
+          final tipoAutor = _tipoAutor(post);
 
           return Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -132,33 +237,43 @@ class _ForumScreenState extends State<ForumScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    CircleAvatar(
-                      backgroundColor: AppColors.blue,
-                      child: Text(
-                        _inicialUsuario(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
+                    _avatarAutor(post),
+                    const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
-                        titulo,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            nomeAutor,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                          if (tipoAutor.isNotEmpty) ...[
+                            const SizedBox(height: 3),
+                            Text(
+                              tipoAutor,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white54,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                   ],
                 ),
-                if (conteudo.trim().isNotEmpty) ...[
-                  const SizedBox(height: 10),
+                if (conteudo.isNotEmpty) ...[
+                  const SizedBox(height: 12),
                   Text(conteudo, style: const TextStyle(color: Colors.white70)),
                 ],
               ],
