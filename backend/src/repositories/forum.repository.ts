@@ -2,7 +2,9 @@ import prisma from "../config/prisma";
 import { NotFoundError } from "../errors/not-found.error";
 
 export class ForumRepository {
-  private formatarPost(post: any) {
+  private formatarPost(post: any, autor?: any) {
+    const autorReal = autor ?? post.autor;
+
     return {
       id: post.id,
       cursoId: post.cursoId,
@@ -10,27 +12,43 @@ export class ForumRepository {
       titulo: post.titulo,
       conteudo: post.conteudo,
       createdAt: post.createdAt,
-      autorNome: post.autor?.nome ?? "Usuário",
-      autorEmail: post.autor?.email ?? "",
-      autorFoto: post.autor?.fotoUrl ?? null,
-      autorTipo: post.autor?.tipo ?? "",
+      autorNome: autorReal?.nome ?? "Usuário",
+      autorEmail: autorReal?.email ?? "",
+      autorFoto: autorReal?.fotoUrl ?? null,
+      autorTipo: autorReal?.tipo ?? "",
       cursoTitulo: post.curso?.titulo ?? post.curso?.nome ?? "",
       comentarios: post.comentarios ?? [],
     };
   }
 
+  private async buscarAutoresPorIds(ids: number[]) {
+    const idsValidos = [...new Set(ids.filter((id) => id > 0))];
+
+    if (idsValidos.length === 0) {
+      return new Map<number, any>();
+    }
+
+    const autores = await prisma.usuario.findMany({
+      where: {
+        id: {
+          in: idsValidos,
+        },
+      },
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        fotoUrl: true,
+        tipo: true,
+      },
+    });
+
+    return new Map(autores.map((autor) => [autor.id, autor]));
+  }
+
   async getAll() {
     const posts = await prisma.postForum.findMany({
       include: {
-        autor: {
-          select: {
-            id: true,
-            nome: true,
-            email: true,
-            fotoUrl: true,
-            tipo: true,
-          },
-        },
         curso: true,
         comentarios: true,
       },
@@ -39,22 +57,19 @@ export class ForumRepository {
       },
     });
 
-    return posts.map((post) => this.formatarPost(post));
+    const autoresPorId = await this.buscarAutoresPorIds(
+      posts.map((post) => Number(post.autorId)),
+    );
+
+    return posts.map((post) =>
+      this.formatarPost(post, autoresPorId.get(Number(post.autorId))),
+    );
   }
 
   async getById(id: number) {
     const item = await prisma.postForum.findUnique({
       where: { id },
       include: {
-        autor: {
-          select: {
-            id: true,
-            nome: true,
-            email: true,
-            fotoUrl: true,
-            tipo: true,
-          },
-        },
         curso: true,
         comentarios: true,
       },
@@ -62,7 +77,9 @@ export class ForumRepository {
 
     if (!item) throw new NotFoundError("Post do fórum não encontrado");
 
-    return this.formatarPost(item);
+    const autoresPorId = await this.buscarAutoresPorIds([Number(item.autorId)]);
+
+    return this.formatarPost(item, autoresPorId.get(Number(item.autorId)));
   }
 
   async save(data: any) {
@@ -104,21 +121,14 @@ export class ForumRepository {
         cursoId,
       },
       include: {
-        autor: {
-          select: {
-            id: true,
-            nome: true,
-            email: true,
-            fotoUrl: true,
-            tipo: true,
-          },
-        },
         curso: true,
         comentarios: true,
       },
     });
 
-    return this.formatarPost(postCriado);
+    const autoresPorId = await this.buscarAutoresPorIds([autorId]);
+
+    return this.formatarPost(postCriado, autoresPorId.get(autorId));
   }
 
   async update(id: number, data: any) {
@@ -132,21 +142,19 @@ export class ForumRepository {
       where: { id },
       data: payload,
       include: {
-        autor: {
-          select: {
-            id: true,
-            nome: true,
-            email: true,
-            fotoUrl: true,
-            tipo: true,
-          },
-        },
         curso: true,
         comentarios: true,
       },
     });
 
-    return this.formatarPost(postAtualizado);
+    const autoresPorId = await this.buscarAutoresPorIds([
+      Number(postAtualizado.autorId),
+    ]);
+
+    return this.formatarPost(
+      postAtualizado,
+      autoresPorId.get(Number(postAtualizado.autorId)),
+    );
   }
 
   async delete(id: number) {
