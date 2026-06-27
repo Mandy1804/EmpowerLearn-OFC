@@ -1,20 +1,25 @@
 import { Joi } from "celebrate";
 
-export type User = { //estamos os tipos de dados
+export type User = {
   id: string;
   nome: string;
   cpf: string;
-  idade: number; 
+  idade: number;
   email: string;
   telefone: string;
   data_nascimento: Date;
 };
 
-export const userSchema = Joi.object().keys({  //informa as chaves que vao ser validadas, e quais validacoes de cada chave
-    nome: Joi.string().required(), // required = obrigatorio
+export const userSchema = Joi.object().keys({
+    nome: Joi.string().required(),
     cpf: Joi.string().required(),
     idade: Joi.number().required(),
-    email: Joi.string().email().required(), //aqui o .email faz a validacao para modelo de email
+    email: Joi.string().email().required(),
     telefone: Joi.string().required(),
     data_nascimento: Joi.string().required(),
 });
+
+export const userProfileUpdateSchema = Joi.object().keys({
+    nome: Joi.string().min(2).max(120).optional(),
+    fotoUrl: Joi.string().allow('', null).optional(),
+}).min(1);
