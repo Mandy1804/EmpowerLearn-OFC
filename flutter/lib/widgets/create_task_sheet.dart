@@ -2,18 +2,16 @@ import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
 
-Future<void> showCreateTaskSheet({
+void showCreateTaskSheet({
   required BuildContext context,
   required int materiaId,
   required String materiaTitulo,
-}) async {
+}) {
   final tituloCtrl = TextEditingController();
   final descricaoCtrl = TextEditingController();
   DateTime? prazo;
 
-  final messenger = ScaffoldMessenger.maybeOf(context);
-
-  await showModalBottomSheet<void>(
+  showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -57,10 +55,7 @@ Future<void> showCreateTaskSheet({
                 const SizedBox(height: 8),
                 Text(
                   'Matéria: $materiaTitulo',
-                  style: const TextStyle(
-                    color: Colors.white60,
-                    fontSize: 14,
-                  ),
+                  style: const TextStyle(color: Colors.white60, fontSize: 14),
                 ),
                 const SizedBox(height: 20),
                 _campo(tituloCtrl, 'Título da tarefa'),
@@ -76,9 +71,11 @@ Future<void> showCreateTaskSheet({
                       lastDate: DateTime.now().add(const Duration(days: 365)),
                     );
 
-                    if (picked != null) {
-                      setModalState(() => prazo = picked);
-                    }
+                    if (picked == null || !sheetContext.mounted) return;
+
+                    setModalState(() {
+                      prazo = picked;
+                    });
                   },
                   child: Container(
                     padding: const EdgeInsets.all(16),
@@ -95,11 +92,13 @@ Future<void> showCreateTaskSheet({
                         ),
                         const SizedBox(width: 10),
                         Text(
-                          prazo == null
-                              ? 'Selecionar prazo'
-                              : '${prazo!.day.toString().padLeft(2, '0')}/${prazo!.month.toString().padLeft(2, '0')}/${prazo!.year}',
+                          prazo != null
+                              ? '${prazo!.day}/${prazo!.month}/${prazo!.year}'
+                              : 'Selecionar prazo',
                           style: TextStyle(
-                            color: prazo == null ? Colors.white38 : Colors.white,
+                            color: prazo != null
+                                ? Colors.white
+                                : Colors.white38,
                           ),
                         ),
                       ],
@@ -113,10 +112,10 @@ Future<void> showCreateTaskSheet({
                   child: ElevatedButton(
                     onPressed: () async {
                       final titulo = tituloCtrl.text.trim();
+                      final descricao = descricaoCtrl.text.trim();
 
                       if (titulo.isEmpty || prazo == null) {
-                        messenger?.hideCurrentSnackBar();
-                        messenger?.showSnackBar(
+                        ScaffoldMessenger.of(sheetContext).showSnackBar(
                           const SnackBar(
                             content: Text('Informe o título e o prazo.'),
                             backgroundColor: Colors.orange,
@@ -125,26 +124,39 @@ Future<void> showCreateTaskSheet({
                         return;
                       }
 
-                      Navigator.of(sheetContext).pop();
+                      final prazoIso = DateTime.utc(
+                        prazo!.year,
+                        prazo!.month,
+                        prazo!.day,
+                        12,
+                      ).toIso8601String();
+
+                      final messenger = ScaffoldMessenger.of(context);
+
+                      Navigator.pop(sheetContext);
 
                       try {
                         await ApiService.createTarefa({
                           'titulo': titulo,
-                          'descricao': descricaoCtrl.text.trim(),
+                          'descricao': descricao,
                           'materiaId': materiaId,
-                          'prazo': prazo!.toIso8601String(),
+                          'prazo': prazoIso,
                         });
 
-                        messenger?.hideCurrentSnackBar();
-                        messenger?.showSnackBar(
+                        if (!context.mounted) return;
+
+                        messenger.hideCurrentSnackBar();
+                        messenger.showSnackBar(
                           const SnackBar(
                             content: Text('Tarefa criada!'),
                             backgroundColor: Colors.green,
                           ),
                         );
                       } catch (e) {
-                        messenger?.hideCurrentSnackBar();
-                        messenger?.showSnackBar(
+                        if (!context.mounted) return;
+
+                        messenger.hideCurrentSnackBar();
+                        messenger.showSnackBar(
                           SnackBar(
                             content: Text('Erro ao criar tarefa: $e'),
                             backgroundColor: Colors.redAccent,
@@ -174,24 +186,20 @@ Future<void> showCreateTaskSheet({
         },
       );
     },
-  );
-
-  tituloCtrl.dispose();
-  descricaoCtrl.dispose();
+  ).whenComplete(() {
+    tituloCtrl.dispose();
+    descricaoCtrl.dispose();
+  });
 }
 
-Widget _campo(
-  TextEditingController ctrl,
-  String hint, {
-  int linhas = 1,
-}) {
+Widget _campo(TextEditingController controller, String hint, {int linhas = 1}) {
   return Container(
     decoration: BoxDecoration(
       color: const Color(0xFF111C3D),
       borderRadius: BorderRadius.circular(14),
     ),
     child: TextField(
-      controller: ctrl,
+      controller: controller,
       maxLines: linhas,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(

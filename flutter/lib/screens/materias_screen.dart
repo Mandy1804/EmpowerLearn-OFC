@@ -288,200 +288,6 @@ class _MateriasScreenState extends State<MateriasScreen> {
     });
   }
 
-  void _abrirCriarTarefaMateria(Map<String, dynamic> materia) {
-    final tituloCtrl = TextEditingController();
-    final descricaoCtrl = TextEditingController();
-    DateTime? prazo;
-
-    final materiaId = materia['id'] is int
-        ? materia['id'] as int
-        : int.tryParse(materia['id']?.toString() ?? '') ?? 0;
-
-    final materiaTitulo = materia['titulo']?.toString() ?? 'Matéria';
-
-    if (materiaId <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Matéria inválida para criar tarefa.'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-      return;
-    }
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (sheetContext, setModalState) {
-            return Container(
-              height: MediaQuery.of(sheetContext).size.height * 0.72,
-              decoration: const BoxDecoration(
-                color: Color(0xFF081225),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-              ),
-              padding: EdgeInsets.only(
-                left: 24,
-                right: 24,
-                top: 24,
-                bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 24,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 60,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: Colors.white24,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Criar Tarefa',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Matéria: $materiaTitulo',
-                    style: const TextStyle(color: Colors.white60, fontSize: 14),
-                  ),
-                  const SizedBox(height: 20),
-                  _campo(tituloCtrl, 'Título da tarefa'),
-                  const SizedBox(height: 12),
-                  _campo(descricaoCtrl, 'Descrição', linhas: 3),
-                  const SizedBox(height: 12),
-                  GestureDetector(
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: sheetContext,
-                        initialDate: DateTime.now().add(
-                          const Duration(days: 7),
-                        ),
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 365)),
-                      );
-
-                      if (picked != null) {
-                        setModalState(() => prazo = picked);
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF111C3D),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.calendar_today,
-                            color: Colors.white54,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            prazo != null
-                                ? '${prazo!.day}/${prazo!.month}/${prazo!.year}'
-                                : 'Selecionar prazo',
-                            style: TextStyle(
-                              color: prazo != null
-                                  ? Colors.white
-                                  : Colors.white38,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const Spacer(),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 55,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        final titulo = tituloCtrl.text.trim();
-
-                        if (titulo.isEmpty || prazo == null) {
-                          ScaffoldMessenger.of(sheetContext).showSnackBar(
-                            const SnackBar(
-                              content: Text('Informe o título e o prazo.'),
-                              backgroundColor: Colors.orange,
-                            ),
-                          );
-                          return;
-                        }
-
-                        final messenger = ScaffoldMessenger.of(context);
-
-                        Navigator.pop(sheetContext);
-
-                        try {
-                          await ApiService.createTarefa({
-                            'titulo': titulo,
-                            'descricao': descricaoCtrl.text.trim(),
-                            'materiaId': materiaId,
-                            'prazo': prazo!.toIso8601String(),
-                          });
-
-                          if (!mounted) return;
-
-                          messenger.hideCurrentSnackBar();
-                          messenger.showSnackBar(
-                            const SnackBar(
-                              content: Text('Tarefa criada!'),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-                        } catch (e) {
-                          if (!mounted) return;
-
-                          messenger.hideCurrentSnackBar();
-                          messenger.showSnackBar(
-                            SnackBar(
-                              content: Text('Erro ao criar tarefa: $e'),
-                              backgroundColor: Colors.redAccent,
-                            ),
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4A6CFF),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      child: const Text(
-                        'Criar Tarefa',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    ).whenComplete(() {
-      tituloCtrl.dispose();
-      descricaoCtrl.dispose();
-    });
-  }
-
   Future<void> _deletarMateria(int id) async {
     if (!_isAdmin) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -629,135 +435,123 @@ class _MateriasScreenState extends State<MateriasScreen> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white10),
       ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Na próxima etapa, esta matéria abrirá as tarefas.',
-              ),
-              backgroundColor: Color(0xFF4A6CFF),
-            ),
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF4A6CFF), Color(0xFF7B3FFF)],
-                      ),
-                      borderRadius: BorderRadius.circular(14),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF4A6CFF), Color(0xFF7B3FFF)],
                     ),
-                    child: Center(
-                      child: Text(
-                        ordem,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
+                  child: Center(
                     child: Text(
-                      titulo,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                      ordem,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 17,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
-                  if (_isProfessorOuAdmin)
-                    PopupMenuButton<String>(
-                      color: const Color(0xFF111C3D),
-                      icon: const Icon(Icons.more_vert, color: Colors.white70),
-                      onSelected: (value) {
-                        if (value == 'tarefa') {
-                          final materiaId = id;
-                          final materiaTitulo = materia['titulo']?.toString() ?? 'Matéria';
-
-                          showCreateTaskSheet(
-                            context: context,
-                            materiaId: materiaId,
-                            materiaTitulo: materiaTitulo,
-                          );
-                        }
-
-                        if (value == 'editar') {
-                          _abrirFormularioMateria(materia: materia);
-                        }
-
-                        if (value == 'deletar') {
-                          _deletarMateria(id);
-                        }
-                      },
-                      itemBuilder: (_) {
-                        return [
-                          const PopupMenuItem(
-                            value: 'editar',
-                            child: Text(
-                              'Editar',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ),
-                          if (_isAdmin)
-                            const PopupMenuItem(
-                              value: 'deletar',
-                              child: Text(
-                                'Deletar',
-                                style: TextStyle(color: Colors.redAccent),
-                              ),
-                            ),
-                        ];
-                      },
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    titulo,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
                     ),
-                ],
-              ),
-              if (conteudo.trim().isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Text(
-                  conteudo,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white60,
-                    fontSize: 13,
-                    height: 1.4,
                   ),
                 ),
+                if (_isProfessorOuAdmin)
+                  PopupMenuButton<String>(
+                    color: const Color(0xFF111C3D),
+                    icon: const Icon(Icons.more_vert, color: Colors.white70),
+                    onSelected: (value) {
+                      if (value == 'editar') {
+                        _abrirFormularioMateria(materia: materia);
+                      }
+
+                      if (value == 'deletar') {
+                        _deletarMateria(id);
+                      }
+                    },
+                    itemBuilder: (_) {
+                      return [
+                        const PopupMenuItem(
+                          value: 'editar',
+                          child: Text(
+                            'Editar',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                        if (_isAdmin)
+                          const PopupMenuItem(
+                            value: 'deletar',
+                            child: Text(
+                              'Deletar',
+                              style: TextStyle(color: Colors.redAccent),
+                            ),
+                          ),
+                      ];
+                    },
+                  ),
               ],
-              const SizedBox(height: 14),
-              const Row(
-                children: [
-                  Icon(
-                    Icons.assignment_outlined,
-                    color: Colors.white38,
-                    size: 16,
-                  ),
-                  SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      'Use o menu ⋮ para criar tarefa nesta matéria',
-                      style: TextStyle(color: Colors.white38, fontSize: 12),
-                    ),
-                  ),
-                ],
+            ),
+            if (conteudo.trim().isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                conteudo,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white60,
+                  fontSize: 13,
+                  height: 1.4,
+                ),
               ),
             ],
-          ),
+            if (_isProfessorOuAdmin) ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: ElevatedButton.icon(
+                  onPressed: id <= 0
+                      ? null
+                      : () {
+                          showCreateTaskSheet(
+                            context: context,
+                            materiaId: id,
+                            materiaTitulo: titulo,
+                          );
+                        },
+                  icon: const Icon(Icons.assignment_add, size: 18),
+                  label: const Text('Criar tarefa'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4A6CFF),
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.white12,
+                    disabledForegroundColor: Colors.white38,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
