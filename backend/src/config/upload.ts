@@ -1,57 +1,37 @@
-import fs from "fs";
-import path from "path";
 import multer from "multer";
 
-const uploadDir = path.resolve(process.cwd(), "uploads", "perfil");
-
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-function definirExtensao(file: Express.Multer.File): string {
-    const extOriginal = path.extname(file.originalname || "").toLowerCase();
-
-    if ([".jpg", ".jpeg", ".png", ".webp", ".gif"].includes(extOriginal)) {
-        return extOriginal;
-    }
-
-    if (file.mimetype === "image/png") return ".png";
-    if (file.mimetype === "image/webp") return ".webp";
-    if (file.mimetype === "image/gif") return ".gif";
-
-    return ".jpg";
-}
-
-const storage = multer.diskStorage({
-    destination: (_req, _file, cb) => {
-        cb(null, uploadDir);
-    },
-    filename: (_req, file, cb) => {
-        const ext = definirExtensao(file);
-        const nome = `perfil_${Date.now()}_${Math.round(Math.random() * 1e9)}${ext}`;
-        cb(null, nome);
-    },
-});
+const storage = multer.memoryStorage();
 
 export const uploadPerfil = multer({
-    storage,
-    limits: {
-        fileSize: 5 * 1024 * 1024,
-    },
-    fileFilter: (_req, file, cb) => {
-        const mimetype = file.mimetype || "";
-        const ext = path.extname(file.originalname || "").toLowerCase();
+  storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+  },
+  fileFilter: (_req, file, cb) => {
+    const tiposPermitidos = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/webp",
+      "image/pjpeg",
+      "image/x-png",
+      "application/octet-stream",
+    ];
 
-        const pareceImagem =
-            mimetype.startsWith("image/") ||
-            mimetype === "application/octet-stream" ||
-            [".jpg", ".jpeg", ".png", ".webp", ".gif"].includes(ext);
+    const nomeArquivo = file.originalname.toLowerCase();
 
-        if (!pareceImagem) {
-            cb(new Error("Arquivo enviado não parece ser uma imagem."));
-            return;
-        }
+    const extensaoPermitida =
+      nomeArquivo.endsWith(".jpg") ||
+      nomeArquivo.endsWith(".jpeg") ||
+      nomeArquivo.endsWith(".png") ||
+      nomeArquivo.endsWith(".webp");
 
-        cb(null, true);
-    },
+    const mimetypePermitido = tiposPermitidos.includes(file.mimetype);
+
+    if (!mimetypePermitido && !extensaoPermitida) {
+      return cb(new Error("Formato de imagem inválido"));
+    }
+
+    cb(null, true);
+  },
 });
