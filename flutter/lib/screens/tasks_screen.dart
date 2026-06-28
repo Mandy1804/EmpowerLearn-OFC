@@ -286,120 +286,31 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
   void _abrirSubmeter(dynamic tarefa) {
-    final respostaCtrl = TextEditingController();
+    final tarefaId = _parseId(tarefa['id']);
 
-    showModalBottomSheet(
+    if (tarefaId <= 0) {
+      _mostrarMensagem('Tarefa inválida.', Colors.redAccent);
+      return;
+    }
+
+    showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return Container(
-          height: MediaQuery.of(sheetContext).size.height * 0.6,
-          decoration: const BoxDecoration(
-            color: Color(0xFF081225),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-          ),
-          padding: EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 24,
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 24,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 60,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                tarefa['titulo']?.toString() ?? 'Tarefa',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                tarefa['descricao']?.toString() ?? '',
-                style: const TextStyle(color: Colors.white60, fontSize: 14),
-              ),
-              const SizedBox(height: 20),
-              _campo(respostaCtrl, 'Sua resposta...', linhas: 5),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final resposta = respostaCtrl.text.trim();
-
-                    if (resposta.isEmpty) {
-                      ScaffoldMessenger.of(sheetContext).showSnackBar(
-                        const SnackBar(
-                          content: Text('Informe sua resposta.'),
-                          backgroundColor: Colors.orange,
-                        ),
-                      );
-                      return;
-                    }
-
-                    final tarefaId = _parseId(tarefa['id']);
-
-                    if (tarefaId <= 0) {
-                      Navigator.pop(sheetContext);
-                      _mostrarMensagem('Tarefa inválida.', Colors.redAccent);
-                      return;
-                    }
-
-                    Navigator.pop(sheetContext);
-
-                    try {
-                      await ApiService.submeterTarefa(tarefaId, resposta);
-
-                      if (!mounted) return;
-
-                      _mostrarMensagem('Tarefa enviada!', Colors.green);
-                      await _carregar();
-                    } catch (e) {
-                      if (!mounted) return;
-
-                      _mostrarMensagem(
-                        'Erro ao enviar tarefa: $e',
-                        Colors.redAccent,
-                      );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4A6CFF),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: const Text(
-                    'Enviar Resposta',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+      builder: (_) {
+        return _SubmitTaskSheet(
+          tarefaId: tarefaId,
+          titulo: tarefa['titulo']?.toString() ?? 'Tarefa',
+          descricao: tarefa['descricao']?.toString() ?? '',
         );
       },
-    ).whenComplete(() {
-      respostaCtrl.dispose();
+    ).then((enviou) async {
+      if (enviou != true || !mounted) {
+        return;
+      }
+
+      _mostrarMensagem('Tarefa enviada!', Colors.green);
+      await _carregar();
     });
   }
 
@@ -725,6 +636,199 @@ class _TasksScreenState extends State<TasksScreen> {
       bottomNavigationBar: const BottomNav(currentIndex: 2),
       body: SafeArea(
         child: Padding(padding: const EdgeInsets.all(16), child: _conteudo()),
+      ),
+    );
+  }
+}
+
+class _SubmitTaskSheet extends StatefulWidget {
+  final int tarefaId;
+  final String titulo;
+  final String descricao;
+
+  const _SubmitTaskSheet({
+    required this.tarefaId,
+    required this.titulo,
+    required this.descricao,
+  });
+
+  @override
+  State<_SubmitTaskSheet> createState() => _SubmitTaskSheetState();
+}
+
+class _SubmitTaskSheetState extends State<_SubmitTaskSheet> {
+  final TextEditingController _respostaCtrl = TextEditingController();
+  bool _enviando = false;
+
+  @override
+  void dispose() {
+    _respostaCtrl.dispose();
+    super.dispose();
+  }
+
+  void _mostrarMensagem(String mensagem, Color cor) {
+    if (!mounted) return;
+
+    final messenger = ScaffoldMessenger.maybeOf(context);
+
+    if (messenger == null) return;
+
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(content: Text(mensagem), backgroundColor: cor),
+    );
+  }
+
+  Future<void> _enviar() async {
+    if (_enviando) return;
+
+    final resposta = _respostaCtrl.text.trim();
+
+    if (resposta.isEmpty) {
+      _mostrarMensagem('Informe sua resposta.', Colors.orange);
+      return;
+    }
+
+    setState(() {
+      _enviando = true;
+    });
+
+    try {
+      await ApiService.submeterTarefa(widget.tarefaId, resposta);
+
+      if (!mounted) return;
+
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _enviando = false;
+      });
+
+      _mostrarMensagem('Erro ao enviar tarefa: $e', Colors.redAccent);
+    }
+  }
+
+  Widget _campoResposta() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF111C3D),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: TextField(
+        controller: _respostaCtrl,
+        maxLines: 5,
+        enabled: !_enviando,
+        style: const TextStyle(color: Colors.white),
+        decoration: const InputDecoration(
+          hintText: 'Sua resposta...',
+          hintStyle: TextStyle(color: Colors.white38),
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.all(16),
+        ),
+      ),
+    );
+  }
+
+  Widget _botaoEnviar() {
+    return SizedBox(
+      width: double.infinity,
+      height: 55,
+      child: ElevatedButton(
+        onPressed: _enviando ? null : _enviar,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF4A6CFF),
+          disabledBackgroundColor: const Color(0xFF26345F),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+        child: _enviando
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : const Text(
+                'Enviar Resposta',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final altura = MediaQuery.of(context).size.height * 0.6;
+    final teclado = MediaQuery.of(context).viewInsets.bottom;
+
+    return SafeArea(
+      top: false,
+      child: Container(
+        height: altura,
+        decoration: const BoxDecoration(
+          color: Color(0xFF081225),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+        ),
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: teclado + 24,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 60,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              widget.titulo,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            if (widget.descricao.trim().isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                widget.descricao,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white60, fontSize: 14),
+              ),
+            ],
+            const SizedBox(height: 20),
+            Expanded(
+              child: SingleChildScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                child: _campoResposta(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            _botaoEnviar(),
+          ],
+        ),
       ),
     );
   }

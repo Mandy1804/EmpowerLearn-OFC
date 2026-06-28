@@ -5,6 +5,13 @@ import '../services/api_service.dart';
 import '../widgets/bottom_nav.dart';
 import 'materias_screen.dart';
 
+typedef SalvarCursoCallback =
+    Future<bool> Function({
+      int? id,
+      required String titulo,
+      required String descricao,
+    });
+
 class CoursesScreen extends StatefulWidget {
   const CoursesScreen({super.key});
 
@@ -15,11 +22,16 @@ class CoursesScreen extends StatefulWidget {
 class _CoursesScreenState extends State<CoursesScreen> {
   List<dynamic> _cursos = [];
   bool _carregando = true;
+  bool _salvando = false;
   String _userTipo = 'aluno';
   String? _erro;
 
   bool get _isProfessorOuAdmin {
     return _userTipo == 'professor' || _userTipo == 'admin';
+  }
+
+  bool get _isAdmin {
+    return _userTipo == 'admin';
   }
 
   @override
@@ -44,11 +56,11 @@ class _CoursesScreenState extends State<CoursesScreen> {
       if (!mounted) return;
 
       setState(() {
-        _userTipo = tipo;
+        _userTipo = tipo.toLowerCase();
         _cursos = cursos;
         _carregando = false;
       });
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
 
       setState(() {
@@ -59,328 +71,154 @@ class _CoursesScreenState extends State<CoursesScreen> {
     }
   }
 
-  void _abrirMaterias(Map<String, dynamic> curso) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => MateriasScreen(curso: curso),
-      ),
+  int _parseId(dynamic valor) {
+    if (valor is int) return valor;
+    return int.tryParse(valor?.toString() ?? '') ?? 0;
+  }
+
+  void _mostrarMensagem(String mensagem, Color cor) {
+    if (!mounted) return;
+
+    final messenger = ScaffoldMessenger.maybeOf(context);
+
+    if (messenger == null) return;
+
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(content: Text(mensagem), backgroundColor: cor),
     );
   }
 
-  Widget _campo(
-    TextEditingController controller,
-    String hint, {
-    int linhas = 1,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF111C3D),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: TextField(
-        controller: controller,
-        maxLines: linhas,
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: const TextStyle(color: Colors.white38),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.all(16),
-        ),
-      ),
+  void _abrirMaterias(Map<String, dynamic> curso) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => MateriasScreen(curso: curso)),
     );
   }
 
   void _abrirCriarCurso() {
-    final tituloCtrl = TextEditingController();
-    final descricaoCtrl = TextEditingController();
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return Container(
-          height: MediaQuery.of(sheetContext).size.height * 0.65,
-          decoration: const BoxDecoration(
-            color: Color(0xFF081225),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-          ),
-          padding: EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 24,
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 24,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 60,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Criar Novo Curso',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 20),
-              _campo(tituloCtrl, 'Título do curso'),
-              const SizedBox(height: 12),
-              _campo(
-                descricaoCtrl,
-                'Descrição do curso',
-                linhas: 3,
-              ),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final titulo = tituloCtrl.text.trim();
-                    final descricao = descricaoCtrl.text.trim();
-
-                    if (titulo.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Informe o título do curso.'),
-                          backgroundColor: Colors.orange,
-                        ),
-                      );
-                      return;
-                    }
-
-                    Navigator.pop(sheetContext);
-
-                    try {
-                      await ApiService.createCurso({
-                        'titulo': titulo,
-                        'descricao': descricao,
-                      });
-
-                      await _carregar();
-
-                      if (!mounted) return;
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Curso criado!'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    } catch (e) {
-                      if (!mounted) return;
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Erro ao criar curso: $e'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4A6CFF),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: const Text(
-                    'Criar Curso',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    ).whenComplete(() {
-      tituloCtrl.dispose();
-      descricaoCtrl.dispose();
-    });
+    _abrirFormularioCurso();
   }
 
   void _abrirEditarCurso(Map<String, dynamic> curso) {
-    final tituloCtrl = TextEditingController(
-      text: curso['titulo']?.toString() ?? '',
-    );
+    _abrirFormularioCurso(curso: curso);
+  }
 
-    final descricaoCtrl = TextEditingController(
-      text: curso['descricao']?.toString() ?? '',
-    );
+  void _abrirFormularioCurso({Map<String, dynamic>? curso}) {
+    final isEdicao = curso != null;
+    final cursoId = _parseId(curso?['id']);
 
-    showModalBottomSheet(
+    showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return Container(
-          height: MediaQuery.of(sheetContext).size.height * 0.65,
-          decoration: const BoxDecoration(
-            color: Color(0xFF081225),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-          ),
-          padding: EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 24,
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 24,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 60,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Editar Curso',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 20),
-              _campo(tituloCtrl, 'Título do curso'),
-              const SizedBox(height: 12),
-              _campo(
-                descricaoCtrl,
-                'Descrição do curso',
-                linhas: 3,
-              ),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final titulo = tituloCtrl.text.trim();
-                    final descricao = descricaoCtrl.text.trim();
-
-                    if (titulo.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Informe o título do curso.'),
-                          backgroundColor: Colors.orange,
-                        ),
-                      );
-                      return;
-                    }
-
-                    Navigator.pop(sheetContext);
-
-                    try {
-                      await ApiService.updateCurso(curso['id'], {
-                        'titulo': titulo,
-                        'descricao': descricao,
-                      });
-
-                      await _carregar();
-
-                      if (!mounted) return;
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Curso atualizado!'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    } catch (e) {
-                      if (!mounted) return;
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Erro ao atualizar curso: $e'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4A6CFF),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: const Text(
-                    'Salvar Alterações',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+      builder: (_) {
+        return _CursoFormSheet(
+          cursoId: isEdicao ? cursoId : null,
+          tituloInicial: curso?['titulo']?.toString() ?? '',
+          descricaoInicial: curso?['descricao']?.toString() ?? '',
+          isEdicao: isEdicao,
+          onSalvar: _salvarCurso,
         );
       },
-    ).whenComplete(() {
-      tituloCtrl.dispose();
-      descricaoCtrl.dispose();
+    ).then((salvou) {
+      if (salvou != true || !mounted) {
+        return;
+      }
+
+      _mostrarMensagem(
+        isEdicao ? 'Curso atualizado!' : 'Curso criado!',
+        Colors.green,
+      );
     });
   }
 
+  Future<bool> _salvarCurso({
+    int? id,
+    required String titulo,
+    required String descricao,
+  }) async {
+    if (titulo.trim().isEmpty) {
+      return false;
+    }
+
+    if (mounted) {
+      setState(() {
+        _salvando = true;
+      });
+    }
+
+    try {
+      final dados = {'titulo': titulo.trim(), 'descricao': descricao.trim()};
+
+      if (id == null || id <= 0) {
+        await ApiService.createCurso(dados);
+      } else {
+        await ApiService.updateCurso(id, dados);
+      }
+
+      await _carregar();
+
+      return true;
+    } catch (e) {
+      if (!mounted) return false;
+
+      _mostrarMensagem(
+        id == null || id <= 0
+            ? 'Erro ao criar curso: $e'
+            : 'Erro ao atualizar curso: $e',
+        Colors.red,
+      );
+
+      return false;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _salvando = false;
+        });
+      }
+    }
+  }
+
   Future<void> _matricular(int cursoId) async {
+    if (cursoId <= 0) {
+      _mostrarMensagem('Curso inválido.', Colors.redAccent);
+      return;
+    }
+
     try {
       await ApiService.matricular(cursoId);
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Matriculado com sucesso!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      _mostrarMensagem('Matriculado com sucesso!', Colors.green);
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erro ao matricular: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _mostrarMensagem('Erro ao matricular: $e', Colors.red);
     }
   }
 
   Future<void> _deletarCurso(int id) async {
+    if (!_isAdmin) {
+      _mostrarMensagem(
+        'Somente administradores podem excluir cursos.',
+        Colors.orange,
+      );
+      return;
+    }
+
+    if (id <= 0) {
+      _mostrarMensagem('Curso inválido.', Colors.redAccent);
+      return;
+    }
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: const Color(0xFF111C3D),
-          title: const Text(
-            'Confirmar',
-            style: TextStyle(color: Colors.white),
-          ),
+          title: const Text('Confirmar', style: TextStyle(color: Colors.white)),
           content: const Text(
             'Deseja deletar este curso?',
             style: TextStyle(color: Colors.white70),
@@ -395,10 +233,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
             ),
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text(
-                'Deletar',
-                style: TextStyle(color: Colors.red),
-              ),
+              child: const Text('Deletar', style: TextStyle(color: Colors.red)),
             ),
           ],
         );
@@ -413,25 +248,16 @@ class _CoursesScreenState extends State<CoursesScreen> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Curso removido.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _mostrarMensagem('Curso removido.', Colors.red);
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erro ao deletar curso: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _mostrarMensagem('Erro ao deletar curso: $e', Colors.red);
     }
   }
 
   Widget _cardCurso(Map<String, dynamic> curso) {
+    final id = _parseId(curso['id']);
     final titulo = curso['titulo']?.toString() ?? 'Sem título';
     final descricao = curso['descricao']?.toString() ?? '';
     final publicado = curso['publicado'] == true;
@@ -452,14 +278,9 @@ class _CoursesScreenState extends State<CoursesScreen> {
               height: 8,
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    Color(0xFF4A6CFF),
-                    Color(0xFF7B3FFF),
-                  ],
+                  colors: [Color(0xFF4A6CFF), Color(0xFF7B3FFF)],
                 ),
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(20),
-                ),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
               ),
             ),
             Padding(
@@ -493,10 +314,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
                           ),
                           child: const Text(
                             'Publicado',
-                            style: TextStyle(
-                              color: Colors.green,
-                              fontSize: 11,
-                            ),
+                            style: TextStyle(color: Colors.green, fontSize: 11),
                           ),
                         ),
                     ],
@@ -504,10 +322,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
                   const SizedBox(height: 8),
                   Text(
                     descricao,
-                    style: const TextStyle(
-                      color: Colors.white60,
-                      fontSize: 13,
-                    ),
+                    style: const TextStyle(color: Colors.white60, fontSize: 13),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -538,11 +353,9 @@ class _CoursesScreenState extends State<CoursesScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton(
-                        onPressed: () => _matricular(curso['id']),
+                        onPressed: () => _matricular(id),
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(
-                            color: Color(0xFF4A6CFF),
-                          ),
+                          side: const BorderSide(color: Color(0xFF4A6CFF)),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -569,19 +382,17 @@ class _CoursesScreenState extends State<CoursesScreen> {
                               style: TextStyle(color: Colors.white),
                             ),
                             style: OutlinedButton.styleFrom(
-                              side: const BorderSide(
-                                color: Color(0xFF4A6CFF),
-                              ),
+                              side: const BorderSide(color: Color(0xFF4A6CFF)),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                               ),
                             ),
                           ),
                         ),
-                        if (_userTipo == 'admin') ...[
+                        if (_isAdmin) ...[
                           const SizedBox(width: 8),
                           IconButton(
-                            onPressed: () => _deletarCurso(curso['id']),
+                            onPressed: () => _deletarCurso(id),
                             icon: const Icon(
                               Icons.delete_outline,
                               color: Colors.red,
@@ -599,89 +410,95 @@ class _CoursesScreenState extends State<CoursesScreen> {
     );
   }
 
+  Widget _estadoErro() {
+    return RefreshIndicator(
+      onRefresh: _carregar,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(24),
+        children: [
+          const SizedBox(height: 140),
+          const Icon(Icons.error_outline, color: Colors.redAccent, size: 64),
+          const SizedBox(height: 16),
+          Center(
+            child: Text(
+              _erro ?? 'Erro ao carregar cursos.',
+              style: const TextStyle(color: Colors.white70),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Center(
+            child: TextButton.icon(
+              onPressed: _carregar,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Tentar novamente'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _estadoVazio() {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        const SizedBox(height: 160),
+        const Icon(Icons.school_outlined, color: Colors.white30, size: 64),
+        const SizedBox(height: 16),
+        const Center(
+          child: Text(
+            'Nenhum curso disponível',
+            style: TextStyle(color: Colors.white54),
+          ),
+        ),
+        if (_isProfessorOuAdmin) ...[
+          const SizedBox(height: 20),
+          Center(
+            child: ElevatedButton.icon(
+              onPressed: _salvando ? null : _abrirCriarCurso,
+              icon: const Icon(Icons.add),
+              label: const Text('Criar primeiro curso'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4A6CFF),
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _listaCursos() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _cursos.length,
+      itemBuilder: (_, index) {
+        final item = _cursos[index];
+
+        if (item is! Map) {
+          return const SizedBox.shrink();
+        }
+
+        final curso = Map<String, dynamic>.from(item);
+        return _cardCurso(curso);
+      },
+    );
+  }
+
   Widget _body() {
     if (_carregando) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (_erro != null) {
-      return RefreshIndicator(
-        onRefresh: _carregar,
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(24),
-          children: [
-            const SizedBox(height: 140),
-            const Icon(
-              Icons.error_outline,
-              color: Colors.redAccent,
-              size: 64,
-            ),
-            const SizedBox(height: 16),
-            Center(
-              child: Text(
-                _erro!,
-                style: const TextStyle(color: Colors.white70),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Center(
-              child: TextButton.icon(
-                onPressed: _carregar,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Tentar novamente'),
-              ),
-            ),
-          ],
-        ),
-      );
+      return _estadoErro();
     }
 
     return RefreshIndicator(
       onRefresh: _carregar,
-      child: _cursos.isEmpty
-          ? ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              children: [
-                const SizedBox(height: 160),
-                const Icon(
-                  Icons.school_outlined,
-                  color: Colors.white30,
-                  size: 64,
-                ),
-                const SizedBox(height: 16),
-                const Center(
-                  child: Text(
-                    'Nenhum curso disponível',
-                    style: TextStyle(color: Colors.white54),
-                  ),
-                ),
-                if (_isProfessorOuAdmin) ...[
-                  const SizedBox(height: 20),
-                  Center(
-                    child: ElevatedButton.icon(
-                      onPressed: _abrirCriarCurso,
-                      icon: const Icon(Icons.add),
-                      label: const Text('Criar primeiro curso'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4A6CFF),
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _cursos.length,
-              itemBuilder: (_, index) {
-                final curso = Map<String, dynamic>.from(_cursos[index] as Map);
-                return _cardCurso(curso);
-              },
-            ),
+      child: _cursos.isEmpty ? _estadoVazio() : _listaCursos(),
     );
   }
 
@@ -705,13 +522,222 @@ class _CoursesScreenState extends State<CoursesScreen> {
         actions: [
           if (_isProfessorOuAdmin)
             IconButton(
-              onPressed: _abrirCriarCurso,
+              onPressed: _salvando ? null : _abrirCriarCurso,
               icon: const Icon(Icons.add, color: Colors.white),
               tooltip: 'Criar Curso',
             ),
         ],
       ),
       body: _body(),
+    );
+  }
+}
+
+class _CursoFormSheet extends StatefulWidget {
+  final int? cursoId;
+  final String tituloInicial;
+  final String descricaoInicial;
+  final bool isEdicao;
+  final SalvarCursoCallback onSalvar;
+
+  const _CursoFormSheet({
+    required this.cursoId,
+    required this.tituloInicial,
+    required this.descricaoInicial,
+    required this.isEdicao,
+    required this.onSalvar,
+  });
+
+  @override
+  State<_CursoFormSheet> createState() => _CursoFormSheetState();
+}
+
+class _CursoFormSheetState extends State<_CursoFormSheet> {
+  late final TextEditingController _tituloCtrl;
+  late final TextEditingController _descricaoCtrl;
+
+  bool _salvando = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _tituloCtrl = TextEditingController(text: widget.tituloInicial);
+    _descricaoCtrl = TextEditingController(text: widget.descricaoInicial);
+  }
+
+  @override
+  void dispose() {
+    _tituloCtrl.dispose();
+    _descricaoCtrl.dispose();
+    super.dispose();
+  }
+
+  void _mostrarMensagem(String mensagem, Color cor) {
+    if (!mounted) return;
+
+    final messenger = ScaffoldMessenger.maybeOf(context);
+
+    if (messenger == null) return;
+
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(content: Text(mensagem), backgroundColor: cor),
+    );
+  }
+
+  Future<void> _salvar() async {
+    if (_salvando) return;
+
+    final titulo = _tituloCtrl.text.trim();
+    final descricao = _descricaoCtrl.text.trim();
+
+    if (titulo.isEmpty) {
+      _mostrarMensagem('Informe o título do curso.', Colors.orange);
+      return;
+    }
+
+    setState(() {
+      _salvando = true;
+    });
+
+    final ok = await widget.onSalvar(
+      id: widget.cursoId,
+      titulo: titulo,
+      descricao: descricao,
+    );
+
+    if (!mounted) return;
+
+    if (ok) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+
+    setState(() {
+      _salvando = false;
+    });
+  }
+
+  Widget _campo(
+    TextEditingController controller,
+    String hint, {
+    int linhas = 1,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF111C3D),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: TextField(
+        controller: controller,
+        maxLines: linhas,
+        enabled: !_salvando,
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: const TextStyle(color: Colors.white38),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.all(16),
+        ),
+      ),
+    );
+  }
+
+  Widget _botaoSalvar() {
+    return SizedBox(
+      width: double.infinity,
+      height: 55,
+      child: ElevatedButton(
+        onPressed: _salvando ? null : _salvar,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF4A6CFF),
+          disabledBackgroundColor: const Color(0xFF26345F),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+        child: _salvando
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : Text(
+                widget.isEdicao ? 'Salvar Alterações' : 'Criar Curso',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final altura = MediaQuery.of(context).size.height * 0.65;
+    final teclado = MediaQuery.of(context).viewInsets.bottom;
+
+    return SafeArea(
+      top: false,
+      child: Container(
+        height: altura,
+        decoration: const BoxDecoration(
+          color: Color(0xFF081225),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+        ),
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: teclado + 24,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 60,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              widget.isEdicao ? 'Editar Curso' : 'Criar Novo Curso',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: SingleChildScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                child: Column(
+                  children: [
+                    _campo(_tituloCtrl, 'Título do curso'),
+                    const SizedBox(height: 12),
+                    _campo(_descricaoCtrl, 'Descrição do curso', linhas: 3),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            _botaoSalvar(),
+          ],
+        ),
+      ),
     );
   }
 }
