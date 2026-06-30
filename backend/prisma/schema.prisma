@@ -1,0 +1,319 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TipoUsuario {
+  aluno
+  professor
+  admin
+}
+
+model Instituicao {
+  id        Int      @id @default(autoincrement())
+  nome      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  usuarios Usuario[]
+  cursos   Curso[]
+
+  @@map("instituicoes")
+}
+
+model Usuario {
+  id            Int      @id @default(autoincrement())
+  nome          String
+  email         String   @unique
+  senhaHash     String   @map("senha_hash")
+  tipo          TipoUsuario
+  ativo         Boolean  @default(true)
+  fotoUrl       String?  @map("foto_url")
+  instituicaoId Int?     @map("instituicao_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  instituicao           Instituicao?       @relation(fields: [instituicaoId], references: [id])
+  cursosCriados         Curso[]            @relation("CursosCriados")
+  materiasComoProfessor Materia[]          @relation("MateriasMinistradas")
+  matriculas            Matricula[]
+  progresso             ProgressoMateria[]
+  submissoes            Submissao[]        @relation("SubmissoesAluno")
+  postsForum            PostForum[]        @relation("AutorPostForum")
+  comentarios           Comentario[]       @relation("AutorComentario")
+  assinaturas           Assinatura[]
+  notificacoes          Notificacao[]
+  mensagensEnviadas     MensagemChat[]     @relation("AutorMensagem")
+  historico             Historico[]
+  favoritos             Favorito[]
+  notas                 NotaAluno[]
+  refreshTokens         RefreshToken[]
+
+  @@map("usuarios")
+}
+
+model Curso {
+  id            Int      @id @default(autoincrement())
+  titulo        String
+  descricao     String
+  publicado     Boolean  @default(false)
+  premium       Boolean  @default(false)
+  instituicaoId Int?     @map("instituicao_id")
+  criadorId     Int?     @map("criador_id")
+  categoriaId   Int?     @map("categoria_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  instituicao Instituicao? @relation(fields: [instituicaoId], references: [id])
+  criador     Usuario?     @relation("CursosCriados", fields: [criadorId], references: [id])
+  categoria   Categoria?   @relation(fields: [categoriaId], references: [id])
+  matriculas  Matricula[]
+  materias    Materia[]
+  postsForum  PostForum[]
+
+  @@map("cursos")
+}
+
+model Materia {
+  id          Int      @id @default(autoincrement())
+  cursoId     Int      @map("curso_id")
+  professorId Int      @map("professor_id")
+  titulo      String
+  conteudo    String
+  pdfUrl      String?  @map("pdf_url")
+  resumoIa    String?  @map("resumo_ia")
+  ordem       Int
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  curso     Curso              @relation(fields: [cursoId], references: [id], onDelete: Cascade)
+  professor Usuario            @relation("MateriasMinistradas", fields: [professorId], references: [id])
+  progresso ProgressoMateria[]
+  tarefas   Tarefa[]
+  videos    Video[]
+  historico Historico[]
+  notas     NotaAluno[]
+
+  @@map("materias")
+}
+
+model Matricula {
+  id            Int      @id @default(autoincrement())
+  alunoId       Int      @map("aluno_id")
+  cursoId       Int      @map("curso_id")
+  dataMatricula DateTime @default(now()) @map("data_matricula")
+
+  aluno Usuario @relation(fields: [alunoId], references: [id], onDelete: Cascade)
+  curso Curso   @relation(fields: [cursoId], references: [id], onDelete: Cascade)
+
+  @@unique([alunoId, cursoId])
+  @@map("matriculas")
+}
+
+model ProgressoMateria {
+  id          Int      @id @default(autoincrement())
+  alunoId     Int      @map("aluno_id")
+  materiaId   Int      @map("materia_id")
+  concluidaEm DateTime @default(now()) @map("concluida_em")
+
+  aluno   Usuario @relation(fields: [alunoId], references: [id], onDelete: Cascade)
+  materia Materia @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+
+  @@unique([alunoId, materiaId])
+  @@map("progresso_materias")
+}
+
+model Tarefa {
+  id        Int      @id @default(autoincrement())
+  materiaId Int      @map("materia_id")
+  titulo    String
+  descricao String
+  prazo     DateTime
+  createdAt DateTime @default(now()) @map("created_at")
+
+  materia    Materia     @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+  submissoes Submissao[]
+
+  @@map("tarefas")
+}
+
+model Submissao {
+  id          Int       @id @default(autoincrement())
+  tarefaId    Int       @map("tarefa_id")
+  alunoId     Int       @map("aluno_id")
+  resposta    String
+  entregueEm  DateTime  @default(now()) @map("entregue_em")
+  nota        Float?
+  feedback    String?
+  corrigidaEm DateTime? @map("corrigida_em")
+
+  tarefa Tarefa  @relation(fields: [tarefaId], references: [id], onDelete: Cascade)
+  aluno  Usuario @relation("SubmissoesAluno", fields: [alunoId], references: [id])
+
+  @@unique([tarefaId, alunoId])
+  @@map("submissoes")
+}
+
+model PostForum {
+  id        Int      @id @default(autoincrement())
+  cursoId   Int      @map("curso_id")
+  autorId   Int      @map("autor_id")
+  titulo    String
+  conteudo  String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  curso       Curso        @relation(fields: [cursoId], references: [id], onDelete: Cascade)
+  autor       Usuario      @relation("AutorPostForum", fields: [autorId], references: [id])
+  comentarios Comentario[]
+
+  @@map("posts_forum")
+}
+
+model Comentario {
+  id        Int      @id @default(autoincrement())
+  postId    Int      @map("post_id")
+  autorId   Int      @map("autor_id")
+  conteudo  String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  post  PostForum @relation(fields: [postId], references: [id], onDelete: Cascade)
+  autor Usuario   @relation("AutorComentario", fields: [autorId], references: [id])
+
+  @@map("comentarios")
+}
+
+model Plano {
+  id          Int     @id @default(autoincrement())
+  nome        String
+  preco       Float
+  descricao   String
+  duracaoDias Int     @map("duracao_dias")
+  ativo       Boolean @default(true)
+
+  assinaturas Assinatura[]
+
+  @@map("planos")
+}
+
+model Assinatura {
+  id         Int      @id @default(autoincrement())
+  usuarioId  Int      @map("usuario_id")
+  planoId    Int      @map("plano_id")
+  ativa      Boolean  @default(true)
+  dataInicio DateTime @default(now()) @map("data_inicio")
+  dataFim    DateTime @map("data_fim")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  plano   Plano   @relation(fields: [planoId], references: [id])
+
+  @@map("assinaturas")
+}
+
+model Notificacao {
+  id        Int      @id @default(autoincrement())
+  usuarioId Int      @map("usuario_id")
+  tipo      String
+  titulo    String
+  mensagem  String
+  lida      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("notificacoes")
+}
+
+model MensagemChat {
+  id             Int      @id @default(autoincrement())
+  cursoId        Int      @map("curso_id")
+  autorId        Int      @map("autor_id")
+  destinatarioId Int      @map("destinatario_id")
+  conteudo       String
+  lida           Boolean  @default(false)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  autor Usuario @relation("AutorMensagem", fields: [autorId], references: [id])
+
+  @@map("mensagens_chat")
+}
+
+model Categoria {
+  id        Int      @id @default(autoincrement())
+  nome      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  cursos Curso[]
+
+  @@map("categorias")
+}
+
+model Video {
+  id        Int      @id @default(autoincrement())
+  materiaId Int      @map("materia_id")
+  titulo    String
+  url       String
+  ordem     Int
+  createdAt DateTime @default(now()) @map("created_at")
+
+  materia Materia @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+
+  @@map("videos")
+}
+
+model Historico {
+  id         Int      @id @default(autoincrement())
+  alunoId    Int      @map("aluno_id")
+  materiaId  Int      @map("materia_id")
+  dataAcesso DateTime @default(now()) @map("data_acesso")
+
+  aluno   Usuario @relation(fields: [alunoId], references: [id], onDelete: Cascade)
+  materia Materia @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+
+  @@map("historico")
+}
+
+model Favorito {
+  id        Int      @id @default(autoincrement())
+  alunoId   Int      @map("aluno_id")
+  tipo      String // "curso" ou "materia"
+  refId     Int      @map("ref_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  aluno Usuario @relation(fields: [alunoId], references: [id], onDelete: Cascade)
+
+  @@unique([alunoId, tipo, refId])
+  @@map("favoritos")
+}
+
+model NotaAluno {
+  id        Int      @id @default(autoincrement())
+  alunoId   Int      @map("aluno_id")
+  materiaId Int      @map("materia_id")
+  titulo    String
+  conteudo  String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  aluno   Usuario @relation(fields: [alunoId], references: [id], onDelete: Cascade)
+  materia Materia @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+
+  @@map("notas_aluno")
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  usuarioId Int      @map("usuario_id")
+  expiraEm  DateTime @map("expira_em")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
