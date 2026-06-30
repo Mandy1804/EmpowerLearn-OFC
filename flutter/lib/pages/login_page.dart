@@ -251,12 +251,16 @@ class _LoginPageState extends State<LoginPage> {
 
                           const SizedBox(height: 16),
 
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          Wrap(
+                            alignment: WrapAlignment.spaceBetween,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 12,
+                            runSpacing: 8,
                             children: [
                               GestureDetector(
                                 onTap: () => setState(() => _lembrarMe = !_lembrarMe),
                                 child: Row(
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Container(
                                       width: 18,
@@ -363,8 +367,11 @@ class _LoginPageState extends State<LoginPage> {
 
                     const SizedBox(height: 22),
 
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 4,
+                      runSpacing: 6,
                       children: [
                         Text("Não tem uma conta? ",
                             style: GoogleFonts.poppins(color: Colors.white54)),
@@ -378,6 +385,7 @@ class _LoginPageState extends State<LoginPage> {
                           },
                           child: Text(
                             "Criar conta gratuita",
+                            textAlign: TextAlign.center,
                             style: GoogleFonts.poppins(
                               color: const Color(0xFF2563EB),
                               fontWeight: FontWeight.w600,
