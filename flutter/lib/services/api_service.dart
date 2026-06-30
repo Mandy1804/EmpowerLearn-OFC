@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ApiService {
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://empowerlearn-ofc-production.up.railway.app',
+    defaultValue: 'https://discerning-vibrancy-production-c54d.up.railway.app',
   );
 
   static Future<String?> _getToken() async {
